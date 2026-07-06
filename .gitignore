@@ -1,0 +1,7 @@
+*.xlsx
+*.xlsm
+*.db
+*.bak.xlsx
+__pycache__/
+yedek_*/
+debug_*
