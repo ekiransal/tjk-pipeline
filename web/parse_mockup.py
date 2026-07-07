@@ -23,8 +23,16 @@ def parse_sheet(ws):
     maxr, maxc = ws.max_row, ws.max_column
     starts = [r for r in range(1, maxr + 1) if str(grid.get((r, 1), "")).strip() == "Koşu No"]
     bloklar = []
+    GALV = re.compile(r"^\d+\s*/")                                   # galop hücresi: "9 / -4,60 / HÇ"
+    GALO = re.compile(r"^\d+\s*/\s*[-+−]?\d+[.,]\d+\s*/")            # kesin galop deseni (öksüz satır avı)
     for bi, rs in enumerate(starts):
         re_ = starts[bi + 1] - 1 if bi + 1 < len(starts) else maxr
+        # blok içi başlık satırı ("N. Koşu ...") -> galop taraması bunun ÜSTÜNDE kalmalı (detaya girmesin)
+        sinir = re_
+        for r0 in range(rs + 1, re_ + 1):
+            if re.match(r"^\d+\.\s*Koşu", str(grid.get((r0, 1), "")).strip()):
+                sinir = r0 - 1
+                break
         blok = {"header": {}, "tables": [], "galops": [], "detay": [], "title": ""}
         c = 1
         while c <= maxc:
@@ -46,6 +54,16 @@ def parse_sheet(ws):
                         no = grid.get((rr, c0)); deg = grid.get((rr, c0 + 1)); say = grid.get((rr, c0 + 2))
                         if no is None and deg is None:
                             break
+                        # KORUMA: orjin satırı 'No=tam sayı, Değer=sayı' olmalı; galop/şehir
+                        # satırı orjinin altına yapışmışsa tablo BURADA biter (Kocaeli 8 vakası).
+                        _no = str(no).strip() if no is not None else ""
+                        try:
+                            float(str(deg).replace(",", "."))
+                            _degok = True
+                        except Exception:
+                            _degok = False
+                        if not (re.match(r"^\d+$", _no) and _degok):
+                            break
                         rows.append([("" if x is None else str(x)) for x in (no, deg, say)])
                         rr += 1
                     blok["tables"].append({"name": TABLO_AD[nm.upper()], "col": c0, "rows": rows})
@@ -55,13 +73,22 @@ def parse_sheet(ws):
                     isSon = str(nm).strip().upper().startswith("SON")
                     rows = []
                     rr = r + 2
-                    while rr <= re_:
+                    bos = 0
+                    while rr <= sinir:                       # detaya asla sarkmaz
                         v = grid.get((rr, c0))
-                        if v is None:
+                        s = "" if v is None else str(v).strip()
+                        if s == "":
+                            bos += 1                          # BOŞLUK TOLERANSI: veri birkaç satır
+                            if bos > 8:                       # aşağıdan başlayabiliyor (bozuk yerleşim)
+                                break
+                            rr += 1
+                            continue
+                        if not GALV.match(s):                 # galop deseni değilse bitti
                             break
+                        bos = 0
                         t = grid.get((rr, c0 + 1))
                         sh = grid.get((rr, c0 + 2)) if isSon else None
-                        rows.append([str(v).strip(),
+                        rows.append([s,
                                      "" if t is None else str(t).strip(),
                                      "" if sh is None else str(sh).strip()])
                         rr += 1
@@ -92,6 +119,50 @@ def parse_sheet(ws):
                 # YENİ v7 düzeni (sola yaslı) ya da 800 sayfası: olduğu gibi
                 blok["detay"].append(
                     ["" if grid.get((r, c)) is None else str(grid.get((r, c))) for c in range(1, 43)])
+        # ÖKSÜZ GALOP KURTARMA: bozuk yerleşimde ilk galop satırları başlıksız olarak
+        # SOL kolonlara (1,3,5 / 8,11,14) yazılıyor. Desen: hücre=galop, sağı=tarih.
+        # Bu gruplar soldan sağa, panellerin sırasını AYNEN izler -> sırayla eşle,
+        # kurtarılan satırlar panelin BAŞINA eklenir. Sayılar tutmazsa DOKUNMA.
+        if blok["galops"]:
+            kapsanan = set()
+            for g in blok["galops"]:
+                kapsanan.update(range(g["col"], g["col"] + 3))
+            orf = {}
+            for r2 in range(rs + 1, sinir + 1):
+                for c2 in range(1, maxc + 1):
+                    if c2 in kapsanan or (r2, c2) not in grid:
+                        continue
+                    s = str(grid[(r2, c2)]).strip()
+                    if GALO.match(s) and _tarih(str(grid.get((r2, c2 + 1), "")).strip()):
+                        orf.setdefault(c2, []).append(r2)
+            if orf:
+                def _sonmu(c2):
+                    # şehir hücresi: harfli, '/'siz, tarih değil ("Ankara"); yandaki grubun
+                    # galop hücresi ('5 / -2,30 / R') şehir SAYILMAZ.
+                    for r2 in orf[c2]:
+                        sh = str(grid.get((r2, c2 + 2), "")).strip()
+                        if sh and "/" not in sh and not _tarih(sh) and any(ch.isalpha() for ch in sh):
+                            return True
+                    return False
+                normO = sorted(c2 for c2 in orf if not _sonmu(c2))
+                sonO = sorted(c2 for c2 in orf if _sonmu(c2))
+                normP = [g for g in blok["galops"] if not g["son"]]
+                sonP = [g for g in blok["galops"] if g["son"]]
+                kurtarilan = 0
+                if len(normO) == len(normP):
+                    for c2, g in zip(normO, normP):
+                        ek = [[str(grid[(r2, c2)]).strip(),
+                               str(grid.get((r2, c2 + 1), "")).strip(), ""] for r2 in sorted(orf[c2])]
+                        g["rows"] = ek + g["rows"]; kurtarilan += len(ek)
+                if len(sonO) == len(sonP):
+                    for c2, g in zip(sonO, sonP):
+                        ek = [[str(grid[(r2, c2)]).strip(),
+                               str(grid.get((r2, c2 + 1), "")).strip(),
+                               str(grid.get((r2, c2 + 2), "")).strip()] for r2 in sorted(orf[c2])]
+                        g["rows"] = ek + g["rows"]; kurtarilan += len(ek)
+                if kurtarilan:
+                    print(f"  [KURTARMA] {blok['header'].get('İl','?')} {blok['header'].get('Koşu No','?')}. koşu: "
+                          f"{kurtarilan} öksüz galop satırı yerine kondu")
         bloklar.append(blok)
     return bloklar
 

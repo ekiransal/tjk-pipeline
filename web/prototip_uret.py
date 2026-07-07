@@ -9,7 +9,7 @@ HTML = r"""<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1500">
 <title>TJK Yarış Analiz</title>
 <style>
   :root{
@@ -42,8 +42,7 @@ HTML = r"""<!DOCTYPE html>
   .detay th{cursor:default;user-select:none}
   .detay th.siralanir{cursor:pointer}
   .detay th.siralanir:hover{color:var(--pri)}
-  th.sirali{color:var(--pri) !important}
-  th.sirali::after{content:" ▲"}
+  
   .fsat td{padding:2px 3px !important;background:var(--pri2);border-top:1px solid var(--line)}
   .fsat select{width:100%;max-width:110px;font-size:10.5px;border:1px solid var(--line);
                border-radius:6px;padding:2px 3px;background:#fff;color:var(--txt)}
@@ -69,18 +68,25 @@ HTML = r"""<!DOCTYPE html>
   .fayrac{height:1px;background:var(--line);margin:6px 0}
   .ftumu-l b{color:var(--pri)}
   /* DOMİNANS GRUPLARI: 50 / 66 / 75 ayrı tonlar + grup başı kalın çizgi */
+  .detay th.g50,.detay th.g66,.detay th.g75{width:46px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
+  .detay th.dar{width:40px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
   .detay th.g50,.detay td.g50{background:#e7f3ec !important}
   .detay th.g66,.detay td.g66{background:#e9effa !important}
   .detay th.g75,.detay td.g75{background:#f2ecfa !important}
   
   /* GALOP GRUP KUTULARI: kendi içinde bütün, birbirinden keskin ayrım */
-  .grup30{background:#edf6f2;border:1.5px solid #cfe5db;border-radius:14px;padding:10px}
-  .grupson{background:#fdf2ea;border:1.5px solid #f2dbc7;border-radius:14px;padding:10px}
+  .grup30{background:#edf6f2;border:1.5px solid #9fc4b4;border-radius:12px;padding:7px}
+  .grupson{background:#fdf2ea;border:1.5px solid #e4b894;border-radius:12px;padding:7px}
   .grup30 .panel,.grupson .panel{background:#fff}
+  /* ORJİN GRUP KUTUSU: 6 tablo tek bütün (baba+dede) */
+  .grupor{background:#eef2f9;border:1.5px solid #a9bcdd;border-radius:12px;padding:7px;
+          display:inline-block;max-width:100%}
+  .gbaslik.or{color:#2f6fb3}
 
   /* GALOPLAR TEK SATIR: 30 günlük + son galop yan yana, ayrı renkli kutular */
-  .galoprow{display:flex;gap:14px;align-items:stretch;overflow-x:auto;padding-bottom:4px}
-  .gbaslik{font-size:11px;font-weight:800;letter-spacing:.7px;margin:0 0 8px;color:#1e6f5c}
+  .galoprow{display:flex;gap:10px;align-items:stretch;overflow:visible;padding-bottom:4px;justify-content:flex-start}
+  .galoprow .grup30,.galoprow .grupson{flex:0 1 auto;min-width:0}   /* SOLA YASLI: içerik kadar, gerekirse daralır */
+  .gbaslik{font-size:10px;font-weight:800;letter-spacing:.5px;margin:0 0 5px;color:#1e6f5c}
   .gbaslik.son{color:var(--acc)}
 
   /* ====== MOBİL (telefon önceliği) ====== */
@@ -100,7 +106,43 @@ HTML = r"""<!DOCTYPE html>
     .tabs{width:100%}.tab{flex:1;padding:9px 6px;text-align:center}
     .kart{padding:12px 12px}
     .ustblok{flex-direction:column}#yan{width:100%}
-    .chip{padding:9px 14px}.chip.num{width:40px}
+    .chip{padding:10px 15px;font-size:14px}.chip.num{width:44px}
+    /* koşu seçici tepede sabit kalır */
+    .kosusec{position:sticky;top:0;z-index:200;background:var(--bg);padding:8px 0;margin:0 -10px;
+             padding-left:10px;padding-right:10px;box-shadow:0 2px 8px rgba(20,30,50,.08)}
+    /* dokunma hedefleri büyüsün */
+    .fok{padding:2px 10px;font-size:12px;line-height:20px}
+    .fpanel label{font-size:14px;padding:7px 0}
+    .detay{overflow-x:auto}
+    .mtum{padding:9px 16px;font-size:13.5px}
+    /* detay tablosu mobil: sıkı hücreler + at adı kısaltılır */
+    .detay table{font-size:10px}
+    .detay th,.detay td{padding:4px 2px}
+    .detay td.atadi{max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .detay td.ucgen{font-size:10.5px;letter-spacing:0}
+    /* GALOPLAR: iki grup (30 günlük | son galop) YAN YANA, içerde paneller alt alta */
+    .galoprow{flex-direction:row;gap:8px;overflow:visible}
+    .grup30,.grupson{flex:1;min-width:0;padding:7px}
+    .paneller.tekhiza{display:grid;grid-template-columns:1fr;gap:6px;overflow:visible}
+    .paneller.tekhiza .panel{flex:none;min-width:0;padding:6px 7px}
+    .panel h4{font-size:10px;margin-bottom:5px}
+    .gbaslik{font-size:9.5px;margin-bottom:5px}
+    .g-satir{font-size:9.5px;gap:3px;padding:3px 0}
+    .atno{min-width:18px;height:18px;font-size:9.5px;border-radius:5px}
+    .gdeger{min-width:32px}
+    .sekil{font-size:8.5px;padding:1px 4px}
+    .gtarih{font-size:8.5px}
+    /* ANALİZ TABLOLARI: 3'lü yan yana, ufak punto */
+    .tablolar.hepsi{grid-template-columns:repeat(3,1fr) !important;gap:6px}
+    .tablo h4{font-size:10px;padding:6px 7px 4px;gap:4px}
+    .tablo h4 .nk{width:7px;height:7px}
+    .tablo td,.tablo th{padding:2px 4px;font-size:9px}
+    .tablo td.say{font-size:8px}
+    /* DETAY: daha sıkı, sağa-sola gitmeden sığmaya yakın */
+    .detay table{font-size:9px}
+    .detay th,.detay td{padding:3px 1px}
+    .detay td.atadi{max-width:62px}
+    .detay td.ucgen{font-size:9.5px}
   }
   /* SEKMELER */
   .tabs{display:flex;gap:4px;background:var(--card);padding:5px;border-radius:12px;
@@ -124,20 +166,22 @@ HTML = r"""<!DOCTYPE html>
   /* GALOP PANELLERİ */
   .paneller{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
   /* TEK HİZA: galop panelleri alta sarkmasın; sığmazsa yatay kaydırılır */
-  .paneller.tekhiza{display:flex;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
-  .paneller.tekhiza .panel{flex:0 0 215px;min-width:215px}
+  .paneller.tekhiza{display:flex;flex-wrap:nowrap;overflow:visible;padding-bottom:2px;gap:6px;justify-content:flex-start}
+  .paneller.tekhiza .panel{flex:0 1 auto;min-width:0;padding:4px 6px}   /* SIKI + sola yaslı */
   .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .panel h4{font-size:12.5px;font-weight:800;color:var(--pri);margin-bottom:8px;letter-spacing:.3px}
+  .panel h4{font-size:11px;font-weight:800;color:var(--pri);margin-bottom:4px;letter-spacing:.2px}
   .panel.sonp h4{color:var(--acc)}
-  .g-satir{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .g-satir{display:flex;flex-wrap:wrap;align-items:center;gap:2px 3px;padding:2px 0;
+           border-bottom:1px dashed var(--line);font-size:10px}  /* sığmazsa tarih alt satıra iner, komşu panele TAŞMAZ */
   .g-satir:last-child{border-bottom:none}
-  .atno{min-width:26px;height:26px;border-radius:8px;background:var(--pri2);color:var(--pri);
-        font-weight:800;display:flex;align-items:center;justify-content:center;font-size:12.5px}
-  .gdeger{font-weight:700;min-width:48px}
+  .atno{min-width:18px;height:18px;border-radius:6px;background:var(--pri2);color:var(--pri);
+        font-weight:800;display:flex;align-items:center;justify-content:center;font-size:10px}
+  .gdeger{font-weight:700;min-width:32px}
   .gdeger.neg{color:#1a7f4b}.gdeger.poz{color:#c23a3a}
-  .sekil{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 6px;background:#eef0f4;color:var(--mut)}
-  .gtarih{color:var(--mut);font-size:11.5px;margin-left:auto;text-align:right}
-  .gsehir{color:var(--acc);font-size:11px;font-weight:600}
+  .sekil{font-size:9px;font-weight:800;border-radius:5px;padding:1px 4px;background:#eef0f4;color:var(--mut)}
+  .gtarih{color:var(--mut);font-size:9.5px;margin-left:auto;text-align:right;white-space:nowrap}
+  .panel{overflow:hidden}   /* içerik komşu panele kesinlikle akmaz */
+  .gsehir{color:var(--acc);font-size:9.5px;font-weight:600}
   .bos{color:var(--mut);font-size:12px;font-style:italic;padding:6px 0}
   .tablonot{color:var(--mut);font-size:11.5px;font-style:italic;margin-top:8px}
   .tablonot.ustte{margin:0 0 6px;text-align:right}
@@ -159,26 +203,29 @@ HTML = r"""<!DOCTYPE html>
      text-align:left;padding:5px 9px;background:var(--bg)}
   td{padding:5px 9px;border-top:1px solid var(--line)}
   td.no{font-weight:800;width:44px}
-  tr.r1 td.no span,tr.r2 td.no span,tr.r3 td.no span{display:inline-flex;width:24px;height:24px;
-     border-radius:7px;align-items:center;justify-content:center;color:#fff;font-size:12px}
-  tr.r1 td.no span{background:var(--gold)} tr.r2 td.no span{background:#9aa4b5} tr.r3 td.no span{background:#c98d5c}
   td.deg{position:relative;font-weight:700}
   td.deg .bar{position:absolute;left:0;top:15%;bottom:15%;background:var(--pri2);border-radius:0 6px 6px 0;z-index:0}
   td.deg span{position:relative;z-index:1}
-  td.say{color:var(--mut);font-size:11.5px;text-align:right;white-space:nowrap}
+  td.say{color:var(--txt);font-weight:700;text-align:left;white-space:nowrap}  /* SAYI başlığının altında, orana yakın */
   /* DETAY TABLOSU — TEK SAYFA: yana kaydırma yerine sığdır (kompakt) */
-  .detay{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-  .detay table{font-size:11px;white-space:normal;width:100%}
-  .detay th{position:sticky;top:0;background:var(--bg);z-index:2;padding:5px 5px;
-            white-space:normal;line-height:1.15;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center}
-  .detay td{padding:4px 5px;border:1px solid #c9cfd9;line-height:1.25;text-align:center}
+  .detay{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);
+         display:inline-block;max-width:100%;vertical-align:top}  /* kutu tabloya sarılır, boş sağ kalmaz */
+  .detay table{font-size:10px;white-space:normal;width:auto;margin:0}  /* genişlik: içerik kadar (DAR) */
+  .detay th{position:sticky;top:0;background:var(--bg);z-index:2;padding:3px 2px;
+            white-space:normal;line-height:1.1;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center;font-size:9.5px}
+  .detay td{padding:2px 2px;border:1px solid #c9cfd9;line-height:1.2;text-align:center}
   .detay tr:nth-child(even) td{background:#fafbfc}
   .detay tr:hover td{background:#e2efe8 !important}
-  .detay td.atadi{font-weight:700;text-align:center}
+  .detay td.atadi{font-weight:700;text-align:center;width:64px;white-space:normal;overflow-wrap:break-word;line-height:1.15}
+  .detay td.kcins{width:56px;white-space:normal;line-height:1.15}   /* Koşu Cinsi: metin kaydırılır, sütun dar */
+  .detay td.yc{width:42px;white-space:normal;line-height:1.15}      /* Yaş/Cins: '4y Erkek' iki satıra iner */
   .detay td.ucgen{font-size:13px;letter-spacing:1px;color:#1c2333;white-space:nowrap;text-align:center !important}
   .detay td.orta{text-align:center}
   .detay td.num{text-align:center}
   .detay td.drc{font-weight:800;color:#111}
+  .detay td.sonno{font-weight:800;background:var(--pri2)}
+  .detay td.kfiyi{color:#1a7f4b;font-weight:700}
+  .detay td.kfkotu{color:#c23a3a;font-weight:700}
   .detay td.dom.poz{color:#1a7f4b;font-weight:700}
   .detay td.dom.neg{color:#c23a3a;font-weight:700}
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
@@ -219,10 +266,9 @@ HTML = r"""<!DOCTYPE html>
   <div class="ustblok">
     <div class="ustsol">
       <div class="secici"><span class="lbl">İl</span><span id="iller"></span></div>
-      <div class="secici"><span class="lbl">Koşu</span><span id="kosular"></span></div>
+      <div class="secici kosusec"><span class="lbl">Koşu</span><span id="kosular"></span></div>
       <div class="tabs" id="tabs">
-        <button class="tab on" data-t="Sayfa1">Toplam Derece</button>
-        <button class="tab" data-t="Sayfa2">Son 800 Analizi</button>
+        <button class="tab on" data-t="Sayfa1">Analiz</button>
         <button class="tab" data-t="AGF">AGF</button>
       </div>
     </div>
@@ -260,7 +306,13 @@ function ciz(){
   }
   document.querySelectorAll(".tab").forEach(t=>{
     t.classList.toggle("on",t.dataset.t===secTab);
-    t.onclick=()=>{secTab=t.dataset.t; ciz();};
+    t.onclick=()=>{
+      if(t.dataset.t==="AGF"){   // AGF: TJK günlük program (AGF tabloları) yeni sekmede
+        window.open("https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami","_blank");
+        return;
+      }
+      secTab=t.dataset.t; ciz();
+    };
   });
   // EXTREMLER (sağ üst) — SEÇİLİ KOŞUYA özel
   const yan=document.getElementById("yan");
@@ -306,34 +358,41 @@ function galopSatir(r){
 }
 
 function tabloHTML(t){
+  // SIRALAMA: Değer büyükten küçüğe; EŞİTSE Sayı'nın payı (267/1726 -> 267) büyük olan ÜSTTE
+  const trows=t.rows.slice().sort((a,b)=>{
+    const dv=s=>{const f=parseFloat(String(s).replace(",","."));return isNaN(f)?-Infinity:f;};
+    const nv=s=>{const n=parseInt(String(s).split("/")[0],10);return isNaN(n)?-1:n;};
+    return (dv(b[1])-dv(a[1])) || (nv(b[2])-nv(a[2]));
+  });
   let maxd=0;
-  for(const r of t.rows){const v=parseFloat(String(r[1]).replace(",","."));if(!isNaN(v))maxd=Math.max(maxd,Math.abs(v));}
-  const rows=t.rows.map((r,i)=>{
+  for(const r of trows){const v=parseFloat(String(r[1]).replace(",","."));if(!isNaN(v))maxd=Math.max(maxd,Math.abs(v));}
+  const rows=trows.map((r,i)=>{
     const v=parseFloat(String(r[1]).replace(",","."));
     const w=(maxd>0&&!isNaN(v))?Math.round(Math.abs(v)/maxd*100):0;
-    const rk=i<3?` class="r${i+1}"`:"";
-    const no=i<3?`<span>${esc(r[0])}</span>`:esc(r[0]);
-    return `<tr${rk}><td class="no">${no}</td>
+    return `<tr><td class="no">${esc(r[0])}</td>
       <td class="deg"><div class="bar" style="width:${w}%"></div><span>${esc(r[1])}</span></td>
       <td class="say">${esc(r[2])}</td></tr>`;
   }).join("");
-  return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${t.name}</h4>
+  const ORJ_AD={"Kalite":"Baba: Elit Kazanç","Mesafe":"Baba: Bu Mesafedeki Payı",
+                "Sprinter":"Baba: Sprintle Kazanç","Kaçak":"Baba: Kaçarak Kazanç",
+                "Dede Kalite":"Anne Baba (Dede): Elit Kazanç","Dede Mesafe":"Anne Baba (Dede): Bu Mesafedeki Payı"};
+  return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${ORJ_AD[t.name]||t.name}</h4>
     <table><tr><th>No</th><th>Değer</th><th>Sayı</th></tr>${rows}</table></div>`;
 }
 
 // MOBİLDE GİZLENEN ikincil kolonlar (telefonda sade görünüm; 'tüm kolonlar' ile açılır)
-const MGIZ = {"Sayfa1":[3,4,6,11,13,16,18,22,23,27,28,29,30], "Sayfa2":[5,6,9,10,12,14,22,23,24,25,28]};
+const MGIZ = {"Sayfa1":[3,4,6,10,11,13,16,18,22,23,24,31,32], "Sayfa2":[4,5,6,9,10,12,16,17,18]};
 let mTum=false;   // true = telefonda da tüm kolonlar
-const BASLIK_TD = ["No","At","Kilo","E.Kilo","K.Fark","Koşu Cinsi","?7","?8","Tarih","Şehir",
+const BASLIK_TD = ["No","At","Y.Kilo","E.Kilo","Kilo Farkı","Koşu Cinsi","?7","?8","Tarih","Şehir",
   "Zemin","?12","Pist","Mesafe","Derece","M.Derece","?17","Yaş/Cins","?19","Kaçıncı","",
-  "İlk 3 HP","Handikap","?24","Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı",
+  "İlk 3 HP'si","Güncel HP","?24","Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı",
   "Koşu Cinsi","?32","","Seyir","Üçgen"];
-const BASLIK_S8 = ["No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Kilo","E.Kilo",
-  "K.Fark","Koşu Cinsi","?13","Son 800","Fark","?16","?17","?18","",
+const BASLIK_S8 = ["No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Y.Kilo","E.Kilo",
+  "Kilo Farkı","Koşu Cinsi","?13","Son 800","Fark","Net Son 800","?17","?18","Kaçıncı",
   "Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı","Seyir","Üçgen","F.Üçgen"];
 
 // SİLİNECEK KOLONLAR (1-tabanlı): at-no tekrarları + H, P, Q + mükerrer koşu cinsi (AX)
-const SIL = {"Sayfa1":[7,8,12,16,17,19,24,31,32], "Sayfa2":[7,13,16,17,18]};
+const SIL = {"Sayfa1":[7,8,12,16,17,19,24,31,32], "Sayfa2":[7,13,14,15,17,18,28]};   // Son 800 (14) + Fark (15) gizli; P/Net Son 800 (16) görünür; F.Üçgen (28) gizli
 // DOMİNANS kolonları: artı YEŞİL, eksi KIRMIZI
 const DOMK = {"Sayfa1":[25,26,27,28,29,30], "Sayfa2":[20,21,22,23,24,25]};
 // SON HP: HP listesinin yalnız SON değeri gösterilir (AP sütunu isteği)
@@ -373,15 +432,24 @@ function detayHTML(b, tab){
   const dolu=[];
   for(let c=0;c<42;c++){
     if(sil.has(c)||c===seyB) continue;
-    if(rows.some(r=>String(r[c]??"").trim()!=="") || c===seyA) dolu.push(c);
+    if(rows.some(r=>String(r[c]??"").trim()!=="") || c===seyA || (tab==="Sayfa2"&&c===18)) dolu.push(c);   // S8: Kaçıncı sentetik
   }
   // Handikap ile İlk 3 HP yer değiştirir (Handikap önce)
   if(tab==="Sayfa1"){
     const i1=dolu.indexOf(21), i2=dolu.indexOf(22);
     if(i1>-1&&i2>-1){ dolu[i1]=22; dolu[i2]=21; }
   }
+  // SON 800: kolon sırası Toplam Derece iskeletine çekilir (aynı bilgi aynı yerde)
+  //   No · At · Y.Kilo · E.Kilo · Kilo Farkı · Koşu Cinsi · Tarih · Şehir · Zemin · Pist · Mesafe · Son 800 · Fark · ...
+  if(tab==="Sayfa2"){
+    const isk=[0,1,8,9,10,11,2,3,4,5,7,13,14];
+    dolu.sort((a,b)=>{
+      const ia=isk.indexOf(a), ib=isk.indexOf(b);
+      return (ia<0?isk.length+a:ia)-(ib<0?isk.length+b:ib);
+    });
+  }
   // filtreli kolonlar + otomatik sıralama kolonu (Derece / Son 800)
-  const FK = tab==="Sayfa1" ? {no:0,sehir:9,msf:13,tarih:8,drc:14,kf:4} : {no:0,sehir:3,msf:7,tarih:2,drc:13,kf:10};
+  const FK = tab==="Sayfa1" ? {no:0,sehir:9,msf:13,tarih:8,drc:14,kf:4,zemin:10} : {no:0,sehir:3,msf:7,tarih:2,drc:15,kf:10,zemin:4};   // S8 sıralama: Net Son 800 (c15)
   const kutuPanel=(c)=>{
     const uniq=[...new Set(rows.map(r=>String(r[c]??"").trim()).filter(v=>v!==""))];
     if(uniq.length<2) return "";
@@ -398,23 +466,25 @@ function detayHTML(b, tab){
       ${secenekler.map(([v,ad])=>`<label><input type="radio" name="f_${tur}_${tab}_${c}" class="fr" value="${v}"${v===""?" checked":""} onchange="${fn||"fUygula"}(this)"> ${ad}</label>`).join("")}
     </div>`;
   const th=dolu.map(c=>{
-    const ad=c===seyA?"Seyir":(basliklar[c]??("K"+(c+1)));
+    const ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
     let f="";
-    if(c===FK.no||c===FK.sehir||c===FK.msf) f=kutuPanel(c);
-    else if(c===FK.tarih) f=secimPanel(c,"trh",[["30","Son 1 Ay"],["90","Son 3 Ay"],["","Tümü"]]);
+    if(c===FK.no||c===FK.sehir||c===FK.msf||c===FK.zemin) f=kutuPanel(c);
+    else if(c===FK.tarih&&tab==="Sayfa1") f=secimPanel(c,"trh",[["60","Son 2 Ay"],["","Tümü"]]);
     else if(c===seyA) f=secimPanel(c,"sey",[["KACAK","Kaçak"],["","Tümü"]]);
-    else if(c===FK.kf) f=secimPanel(c,"kf",[["SIRALA","Küçükten büyüğe"],["","Normal"]],"kFarkSirala");
+    else if(c===FK.kf&&tab==="Sayfa1") f=secimPanel(c,"kf",[["SIRALA","Küçükten büyüğe"],["","Normal"]],"kFarkSirala");
     const g=domGrp(c);
     const mg=(MGIZ[tab]||[]).includes(c+1)?" m-gizle":"";
-    const siralanir=(c===FK.drc||c===FK.kf);   // SADECE Derece ve K.Fark tıklanınca sıralanır
-    return `<th data-c="${c}" class="${g}${g?domBas(c):""}${mg}${siralanir?" siralanir":""}"${siralanir?' onclick="tabloSirala(this)" title="küçükten büyüğe sırala"':""}>${esc(ad)}${f}</th>`;
+    const siralanir=false;   // başlığa tıklayınca sıralama YOK (Derece otomatik, Kilo Farkı panelden)
+    const dar=((tab==="Sayfa1"&&(c===19||c===21||c===22))||(tab==="Sayfa2"&&c===18)||c===FK.kf||c===FK.no||c===FK.msf||c===FK.zemin)?" dar":"";
+    const adH=(c===seyA)?"Yarıştaki<br>Seyri":esc(ad);   // Seyir başlığı iki satır (dar kalsın)
+    return `<th data-c="${c}" class="${g}${g?domBas(c):""}${mg}${siralanir?" siralanir":""}${dar}"${siralanir?' onclick="tabloSirala(this)" title="küçükten büyüğe sırala"':""}>${adH}${f}</th>`;
   }).join("");
   const DOM_YOK=new Set(["ŞARTLI 1","SARTLI 1","ŞARTLI 19","SARTLI 19"]);
   const KCIN = tab==="Sayfa1" ? 5 : 11;   // satırın koşu cinsi kolonu (0-tabanlı)
   let _oncekiAt="";
   const trs=rows.map(r=>{
     const kcinsUp=String(r[KCIN]??"").trim().toUpperCase().replace(/\s+/g," ");
-    const domGizle=DOM_YOK.has(kcinsUp);
+    const domGizle=DOM_YOK.has(kcinsUp)||kcinsUp.startsWith("MAIDEN");   // Maiden (+/Dişi) dominans YOK
     const atBase=String(r[1]??"").trim().toUpperCase().replace(/\d+$/,"").trim();
     const grupBas=(atBase!==_oncekiAt); _oncekiAt=atBase;
     return `<tr${grupBas?' class="grupbas"':''}>`+dolu.map(c=>{
@@ -424,7 +494,13 @@ function detayHTML(b, tab){
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
     else if(c===FK.tarih){ v=tarihGoster(v); cls="num"; }                // tarih dd.mm.yyyy (yıl dahil)
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
-    else if(tab==="Sayfa1"&&c===19){ cls="orta"; }                       // Kaçıncı: ortalı
+    else if(c===FK.kf){                     // Kilo Farkı: EKSİ=avantaj(yeşil), ARTI=dezavantaj(kırmızı)
+      const fk=parseFloat(v.replace(",","."));
+      cls="num "+(fk<0?"kfiyi":(fk>0?"kfkotu":""));
+    }
+    else if(tab==="Sayfa1"&&c===19){ cls="orta"; if(/^\d+$/.test(v)) v=v+"."; }   // Kaçıncı: 2. 3. gibi
+    else if(tab==="Sayfa2"&&c===18){ cls="orta"; v="1."; }                        // S8 Kaçıncı: hepsi 1. (kazananın son 800'ü)
+    else if(basliklar[c]==="Koşu Cinsi"){ cls="kcins"; }                          // Koşu Cinsi: dar + kaydırmalı
     else if(sonhp.has(c)){
       const p=v.split("-").filter(x=>x.trim()!=="");
       v=p.length?p[p.length-1]:v; cls="num";
@@ -434,18 +510,17 @@ function detayHTML(b, tab){
       else{
         const f2=parseFloat(v.replace(",","."));
         cls="num dom "+domGrp(c)+domBas(c)+" "+(f2>0?"poz":(f2<0?"neg":""));
-        if(!isNaN(f2)) v=(Math.round(f2*100)/100).toString();
+        if(!isNaN(f2)){ const yv=Math.round(f2*100)/100; v=(yv>0?"+":"")+yv; }
       }
     }
-    else if(yascins.has(c)) v=yasCinsCevir(v);
+    else if(yascins.has(c)){ v=yasCinsCevir(v); cls="yc"; }
     else if(v.includes("▶")||v.includes("▷")) cls="ucgen";
     else if(/^-?\d/.test(v)) cls="num";
     const dv=(c===seyA)?String(r[seyB]??"").trim():String(r[c]??"").trim();
     const mg2=(MGIZ[tab]||[]).includes(c+1)?" m-gizle":"";
     return `<td class="${cls}${mg2}" data-c="${c}" data-v="${esc(dv)}">${esc(fmt(v))}</td>`;
   }).join("")+"</tr>";}).join("");
-  return `<button class="mtum${mTum?" acik":""}" onclick="mTum=!mTum;document.body.classList.toggle('mtum-acik',mTum);this.classList.toggle('acik',mTum)">${mTum?"◀ Sade görünüm":"Tüm kolonlar ▶"}</button>
-  <div class="detay"><table data-drc="${FK.drc}"><tr>${th}</tr>${trs}</table></div>`;
+  return `<div class="detay"><table data-drc="${FK.drc}"><tr>${th}</tr>${trs}</table></div>`;
 }
 
 function drcSaniye(v){
@@ -471,21 +546,22 @@ function fAc(el,ev){
   }
   p.classList.add("acik");
   const r=el.getBoundingClientRect();
-  p.style.position="fixed";
+  // SAYFAYA GÖRE konum (absolute): zoom ve kaydırmayla birlikte hareket eder,
+  // okun HEMEN ÜSTÜNDE açılır (yukarı doğru), telefonda da şaşmaz.
+  p.style.position="absolute";
   p.style.zIndex="9999";
-  p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-190))+"px";
-  // HER ZAMAN YUKARI doğru açılır; üstte yer azsa panel kendi içinde kaydırılır
-  p.style.top="auto"; p.style.bottom=(window.innerHeight-r.top+4)+"px";
-  p.style.maxHeight=Math.max(140,Math.min(280,r.top-10))+"px";
+  p.style.right="auto"; p.style.width=""; p.style.bottom="auto";
+  const sx=window.scrollX||document.documentElement.scrollLeft;
+  const sy=window.scrollY||document.documentElement.scrollTop;
+  p.style.left=Math.max(8,sx+r.left-4)+"px";
+  p.style.top=(sy+r.top-6)+"px";
+  p.style.transform="translateY(-100%)";
+  p.style.maxHeight="300px";
 }
 document.addEventListener("click",e=>{
   if(!e.target.closest(".fpanel")&&!e.target.closest(".fok"))
     document.querySelectorAll(".fpanel.acik").forEach(x=>x.classList.remove("acik"));
 });
-window.addEventListener("scroll",e=>{
-  if(e.target instanceof Element && e.target.closest && e.target.closest(".fpanel")) return;
-  document.querySelectorAll(".fpanel.acik").forEach(x=>x.classList.remove("acik"));
-},true);
 window.addEventListener("resize",()=>{
   document.querySelectorAll(".fpanel.acik").forEach(x=>x.classList.remove("acik"));
 });
@@ -638,7 +714,7 @@ function derecelerBolum(){
     if(at&&!gorulen.has(at)){gorulen.add(at);atlar.push([no,at]);}
   }
   if(!atlar.length) return "";
-  // FİLTRE: yalnız Şehir + Mesafe + tarih aralığı (Son 1 Ay / 3 Ay / Tümü)
+  // FİLTRE: yalnız Şehir + Mesafe + tarih aralığı (Son 2 Ay / Tümü)
   const secim={sehir:new Set(),msf:new Set()};
   for(const [,at] of atlar) for(const k of (der[at]||[])){
     if(k[1])secim.sehir.add(k[1]); if(k[4])secim.msf.add(k[4]);
@@ -652,8 +728,7 @@ function derecelerBolum(){
     ${fsel("msf","Mesafe",[...secim.msf].sort((a,b)=>parseInt(a)-parseInt(b)))}
     <select class="fdrop" onchange="derF.ay=this.value;ciz()">
       <option value="">Tarih ▾ tümü</option>
-      <option value="30"${derF.ay==="30"?" selected":""}>Son 1 Ay</option>
-      <option value="90"${derF.ay==="90"?" selected":""}>Son 3 Ay</option></select>
+      <option value="60"${derF.ay==="60"?" selected":""}>Son 2 Ay</option></select>
     ${(derF.sehir||derF.msf||derF.ay)?`<button class="chip fchip" style="border-color:var(--acc);color:var(--acc)" onclick="derF={sehir:'',msf:'',ay:''};ciz()">✕ temizle</button>`:""}
   </div>`;
   let esik=null;
@@ -680,7 +755,7 @@ function derecelerBolum(){
         <span class="atno">${esc(no)}</span><b>${esc(at)}</b>
         <span style="color:var(--mut);font-size:12px">${kosular.length} koşu</span></div>
       ${kosular.length?`<div class="detay"><table>
-        <tr>${["Tarih","Şehir","Pist","Msf","Derece","Koşu Cinsi","Sıra","HP","Seyir"].map((b,i)=>`<th data-c="${i}" onclick="tabloSirala(this)" title="küçükten büyüğe sırala">${b}</th>`).join("")}</tr>
+        <tr>${["Tarih","Şehir","Pist","Msf","Derece","Koşu Cinsi","Sıra","HP","Seyir"].map((b,i)=>`<th data-c="${i}">${b}</th>`).join("")}</tr>
         ${trs}</table></div>`:'<div class="bos">derece kaydı yok</div>'}
     </div>`;
   }).join("");
@@ -707,10 +782,11 @@ function kartHTML(b){
       <span class="m"><b>Koşu</b>${esc(h["Koşu No"]||"")}</span>
       ${meta}${yorum}${final}
     </div>
-    ${gecUyarilar(b, secTab)}
+    ${gecUyarilar(b, "Sayfa1")}
 
-    <div class="bol-baslik">Analiz — Kalite · Mesafe · Sprinter · Kaçak · Dede</div>
-    <div class="tablolar hepsi">${setA.concat(setDede).map(tabloHTML).join("")}</div>
+    <div class="bol-baslik">Orijin Analizi</div>
+    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — ilk 4 tablo BABA · son 2 tablo ANNE BABA (DEDE)</div>
+    <div class="tablolar hepsi">${setA.concat(setDede).map(tabloHTML).join("")}</div></div>
 
     <div class="bol-baslik">Galoplar</div>
     <div class="galoprow">
@@ -720,9 +796,12 @@ function kartHTML(b){
         <div class="paneller tekhiza">${gSon.map(pnl).join("")||'<div class="bos">son galop verisi yok</div>'}</div></div>
     </div>
 
-    <div class="bol-baslik">${secTab==="Sayfa1"?"Toplam Derece — Detay":"Son 800 — Detay"}</div>
-    <div class="tablonot ustte">Not: At yarışı genel hükümlerine göre her handikap puanı, sıklette ½ kg’a tekabül eder. Tablodaki kilo değerini 2 ile çarparak yanındaki HP değeriyle kıyaslayabilir; atın derece sıralamasında ne kadar öne çıkabileceğini ya da geride kalabileceğini kolayca hesaplayabilirsiniz. Yeşil değerler avantajı, kırmızılar dezavantajı gösterir.</div>
-    ${detayHTML(b, secTab)}
+    <div class="bol-baslik">Toplam Derece — Detay</div>
+    <div class="tablonot ustte">Not: At yarışı genel hükümleri 7. md. uyarınca her 1 handikap puanı artışında sıklet ½ kg arttırılır. Tablodaki Kilo Avantajı değerlerini 2 ile çarparak yanındaki HP Avantajı değeriyle kıyaslayabilir; atın derece sıralamasında ne kadar öne çıkabileceğini ya da geride kalabileceğini kolayca hesaplayabilirsiniz. Tablo genelinde yeşil değerler avantajı, kırmızı değerler dezavantajı gösterir; Kilo Farkı'nda daha az kilo taşımak avantaj olduğundan eksi (−) değerler yeşildir.</div>
+    ${detayHTML(b, "Sayfa1")}
+
+    ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
+      return b8?`<div class="bol-baslik">Son 800 — Detay</div>${detayHTML(b8,"Sayfa2")}`:"";})()}
   </div>`;
 }
 
