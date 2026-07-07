@@ -170,8 +170,8 @@ HTML = r"""<!DOCTYPE html>
   .detay{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
   .detay table{font-size:11px;white-space:normal;width:100%}
   .detay th{position:sticky;top:0;background:var(--bg);z-index:2;padding:5px 5px;
-            white-space:normal;line-height:1.15;border:none;border-bottom:2px solid var(--line);text-align:center}
-  .detay td{padding:4px 5px;border:1px solid var(--line);line-height:1.25;text-align:center}
+            white-space:normal;line-height:1.15;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center}
+  .detay td{padding:4px 5px;border:1px solid #c9cfd9;line-height:1.25;text-align:center}
   .detay tr:nth-child(even) td{background:#fafbfc}
   .detay tr:hover td{background:#e2efe8 !important}
   .detay td.atadi{font-weight:700;text-align:center}
@@ -721,7 +721,7 @@ function kartHTML(b){
     </div>
 
     <div class="bol-baslik">${secTab==="Sayfa1"?"Toplam Derece — Detay":"Son 800 — Detay"}</div>
-    <div class="tablonot ustte">Not: At yarışı genel hükümlerine göre her 1 HP artışına sıklete yarım (0,5) kilo eklenir.</div>
+    <div class="tablonot ustte">Not: At yarışı genel hükümlerine göre her handikap puanı, sıklette ½ kg’a tekabül eder. Tablodaki kilo değerini 2 ile çarparak yanındaki HP değeriyle kıyaslayabilir; atın derece sıralamasında ne kadar öne çıkabileceğini ya da geride kalabileceğini kolayca hesaplayabilirsiniz. Yeşil değerler avantajı, kırmızılar dezavantajı gösterir.</div>
     ${detayHTML(b, secTab)}
   </div>`;
 }
