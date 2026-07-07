@@ -53,6 +53,11 @@ echo "================= 4/5  BİRLEŞTİR (yapılacak yer) =============="
 caffeinate -i python3 tjk_yeni_yer.py
 
 echo ""
+echo "============ 4.5/5  GEÇ ÇIKIŞ TARAMASI (son 3 koşu) ==========="
+caffeinate -i python3 gec_cikis_rapor.py \
+  || echo "UYARI: geç çıkış taraması hata verdi (pipeline devam ediyor)"
+
+echo ""
 echo "================= 5/5  WEB SAYFASI ============================"
 if [ -d web ]; then
   (cd web && python3 parse_mockup.py ../yeni_yer_SONUC.xlsx && python3 prototip_uret.py) \

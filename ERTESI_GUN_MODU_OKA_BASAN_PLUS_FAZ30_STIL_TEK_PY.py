@@ -738,6 +738,14 @@ def atin_ilk_3_hp_bilgisi(df):
         if len(hp_listesi) >= 3:
             break
 
+    # GÜVENLİK KURALI: gerçek İLK HP en fazla 50 olur. En eski dolu HP 50'nin
+    # ÜZERİNDEYSE liste kesiktir (sayfa 'daha fazla göster' ile kısalmış, atın
+    # gerçek ilk koşuları HTML'de yok) -> YANLIŞ değer yazma, TAMAMEN BOŞ bırak.
+    if hp_listesi:
+        _ilk_hp = sayi_float_temizle(hp_listesi[0])
+        if _ilk_hp is not None and float(_ilk_hp) > 50:
+            return "", "", "", ""
+
     # 3 dolu HP yoksa eksik kalanlar baştan 0 ile tamamlanır.
     while len(hp_listesi) < 3:
         hp_listesi.insert(0, "0")

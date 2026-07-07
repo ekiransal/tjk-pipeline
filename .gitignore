@@ -1,7 +1,13 @@
 *.xlsx
 *.xlsm
 *.db
+*.db-wal
+*.db-shm
 *.bak.xlsx
 __pycache__/
 yedek_*/
 debug_*
+*_rapor/
+web/*.html
+web/*.json
+web/mockup_parsed.json

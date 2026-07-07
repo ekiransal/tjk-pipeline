@@ -111,4 +111,97 @@ for rol, sh in esleme.items():
         out[rol] = parse_sheet(wb[sh])
         det = sum(len(b["detay"]) for b in out[rol])
         print(f"{rol} <- '{sh}': {len(out[rol])} koşu | detay satırı: {det}")
+
+# ---------------------------------------------------------------------------
+# EXTREMLER: uzun aradan gelen + çok sık koşan atlar (sağ üst kutu için)
+# ---------------------------------------------------------------------------
+import datetime
+SIK_GUN = 5     # son koşusu <= bu kadar gün önce -> "sık koşan"
+UZUN_GUN = 60   # son koşusu >= bu kadar gün önce -> "uzun ara"
+
+
+def _hedef_tarih():
+    for yol in ("../gun_ayar.py", "gun_ayar.py"):
+        try:
+            s = open(yol, encoding="utf-8").read()
+            m = re.search(r'(?m)^HEDEF_TARIH\s*=\s*"(\d{2}\.\d{2}\.\d{4})"', s)
+            if m:
+                return datetime.datetime.strptime(m.group(1), "%d.%m.%Y").date()
+        except Exception:
+            pass
+    return None
+
+
+def _d(s):
+    try:
+        return datetime.datetime.strptime(str(s).strip(), "%d.%m.%Y").date()
+    except Exception:
+        return None
+
+
+hedef = _hedef_tarih()
+son_kosu = {}   # (il, kosu, at) -> {"atno":..., "son": date}
+tum = []
+for rol, ad_i, tar_i, sufix in (("Sayfa2", 1, 2, False), ("Sayfa1", 1, 8, True)):
+    for b in out.get(rol, []):
+        il = b["header"].get("İl", ""); kosu = b["header"].get("Koşu No", "")
+        for r in b["detay"]:
+            at = str(r[ad_i]).strip()
+            if sufix:
+                at = re.sub(r"\d+$", "", at).strip()   # 'IRON LION1' -> 'IRON LION'
+            t = _d(r[tar_i])
+            if not at or t is None:
+                continue
+            tum.append(t)
+            k = (il, kosu, at.upper())
+            if k not in son_kosu or t > son_kosu[k]["son"]:
+                son_kosu[k] = {"atno": str(r[0]).strip(), "son": t}
+if hedef is None and tum:
+    hedef = max(tum) + datetime.timedelta(days=1)
+
+extrem = []
+if hedef:
+    for (il, kosu, at), v in son_kosu.items():
+        gun = (hedef - v["son"]).days
+        if gun <= SIK_GUN:
+            extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
+                           "gun": gun, "tip": "sik"})
+        elif gun >= UZUN_GUN:
+            extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
+                           "gun": gun, "tip": "uzun"})
+extrem.sort(key=lambda x: (x["il"], x["tip"], -x["gun"]))
+out["extremler"] = {"hedef": hedef.strftime("%d.%m.%Y") if hedef else "",
+                    "sik_gun": SIK_GUN, "uzun_gun": UZUN_GUN, "liste": extrem}
+print(f"Extremler: {len(extrem)} at (sık<= {SIK_GUN}g, uzun>= {UZUN_GUN}g) | hedef: {out['extremler']['hedef']}")
+
+# Geç çıkış raporu (gec_cikis_rapor.py üretir) — varsa siteye göm
+try:
+    out["gec_cikis"] = json.load(open("gec_cikis.json", encoding="utf-8"))
+    print(f"Geç çıkış: {sum(1 for v in out['gec_cikis'].values() if v.get('problem'))} problemli at gömüldü")
+except Exception:
+    out["gec_cikis"] = {}
+
+# DERECELER sekmesi: 'derece' sayfası (at bazında geçmiş koşular + stil üçgeni)
+out["dereceler"] = {}
+if "derece" in wb.sheetnames:
+    ws = wb["derece"]
+    drows = list(ws.iter_rows(values_only=True))
+    if drows:
+        hdr = {str(h).strip(): i for i, h in enumerate(drows[0]) if h}
+        def _g(r, ad):
+            i = hdr.get(ad)
+            v = r[i] if (i is not None and i < len(r)) else None
+            return "" if v is None else str(v)
+        for r in drows[1:]:
+            at = _g(r, "At Adı").strip().upper()
+            if not at:
+                continue
+            out["dereceler"].setdefault(at, []).append([
+                _g(r, "Tarih"), _g(r, "Şehir"), _g(r, "Pist"), _g(r, "Pist Durumu"),
+                _g(r, "Mesafe"), _g(r, "Derece"), _g(r, "Koşu Cinsi"), _g(r, "Sıra"),
+                _g(r, "HP"), _g(r, "Stil"), _g(r, "Stil Üçgen"),
+            ])
+        print(f"Dereceler: {len(out['dereceler'])} at, "
+              f"{sum(len(v) for v in out['dereceler'].values())} geçmiş koşu")
+
 json.dump(out, open("mockup_parsed.json", "w", encoding="utf-8"), ensure_ascii=False)
