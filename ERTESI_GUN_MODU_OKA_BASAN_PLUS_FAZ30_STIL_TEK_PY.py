@@ -693,6 +693,73 @@ def gercek_gecmis_kosu_satirlari(df):
     return tmp.sort_values("__ORJ_SIRA__", ascending=True, kind="mergesort")
 
 
+def at_gecmisi_tamamla(df, at_sayfa_html, at_adi="", max_sayfa=6):
+    """At geçmiş listesi sunucuda KESİKSE tamamlar.
+
+    TJK at sayfası uzun listelerde ilk ~50 koşuyu verir; altta
+    'Daha Fazla Sonuç Göster' formu vardır ('Toplam 62 sonuçtan 50 tanesi
+    gösteriliyor'). Bu form aynı adrese PageNumber'lı GET atar. Burada o form
+    çözülür, devam sayfaları requests ile çekilir ve satırlar df'e eklenir ->
+    EN ESKİ koşular da gelir, İLK 3 HP gerçek değerleriyle hesaplanır.
+    HERHANGİ bir hata olursa mevcut df aynen döner (50-güvenlik kuralı yanlış
+    ilk-HP'yi zaten engelliyor; bu fonksiyon asla scrape'i bozmaz)."""
+    try:
+        html = at_sayfa_html
+        eklenen = 0
+        for _sayfa in range(max_sayfa):
+            form = None
+            for fm in re.finditer(r"<form\b.*?</form>", html, re.S | re.I):
+                if "show-more" in fm.group(0):
+                    form = fm.group(0)
+                    break
+            if form is None:
+                break
+            act = re.search(r'action="([^"]*)"', form)
+            action = (act.group(1) if act else "").replace("&amp;", "&")
+            if not action:
+                break
+            inputs = {}
+            for im in re.finditer(r"<input\b[^>]*>", form, re.I):
+                tag = im.group(0)
+                n = re.search(r'name="([^"]*)"', tag)
+                v = re.search(r'value="([^"]*)"', tag)
+                if n:
+                    inputs[n.group(1)] = (v.group(1) if v else "")
+            if action.startswith("/"):
+                action = "https://www.tjk.org" + action
+            devam_url = action + ("&" if "?" in action else "?") + urlencode(inputs)
+            html = fetch_html_url(devam_url)
+            time.sleep(1)
+            # devam sayfasındaki geçmiş tablosunu bul (df ile en çok ortak kolonlu)
+            ek = None
+            try:
+                for t in pd.read_html(StringIO(html)):
+                    ortak = len(set(map(str, t.columns)) & set(map(str, df.columns)))
+                    if ek is None or ortak > ek[0] or (ortak == ek[0] and len(t) > len(ek[1])):
+                        ek = (ortak, t)
+            except Exception:
+                ek = None
+            if ek is None or ek[0] == 0:
+                # fragman <table> etiketi olmadan gelmiş olabilir -> sarmala
+                try:
+                    tl = pd.read_html(StringIO("<table>" + html + "</table>"))
+                    if tl and len(tl[0].columns) == len(df.columns):
+                        t0 = tl[0]
+                        t0.columns = df.columns
+                        ek = (len(df.columns), t0)
+                except Exception:
+                    pass
+            if ek is None or len(ek[1]) == 0:
+                break
+            df = pd.concat([df, ek[1]], ignore_index=True, sort=False)
+            eklenen += len(ek[1])
+        if eklenen:
+            print(f"      [TAM LİSTE] {at_adi}: 'daha fazla' ile +{eklenen} eski koşu eklendi (toplam {len(df)})")
+    except Exception as _e:
+        print(f"      [TAM LİSTE] {at_adi}: devam sayfası alınamadı ({str(_e)[:80]}) — mevcut listeyle devam")
+    return df
+
+
 def atin_ilk_3_hp_bilgisi(df):
     """At geçmişinin en altından yukarı doğru ilk 3 DOLU HP'yi alır.
 
@@ -2261,6 +2328,11 @@ for sehir_adi, sehir_url in sehir_linkleri.items():
             link_kayitlari = kosu_tarih_linkleri_cikar(at_sayfa_html, kullanilan_url)
 
             df = tables[1]
+
+            # SAYFA KESİKSE TAMAMLA: 'Toplam 62 sonuçtan 50 tanesi gösteriliyor' +
+            # 'Daha Fazla Sonuç Göster' formu varsa devam sayfalarını da çek ->
+            # en eski koşular gelsin ki İLK 3 HP GERÇEK değerleriyle hesaplansın.
+            df = at_gecmisi_tamamla(df, at_sayfa_html, at_adi)
 
             ilk_3_hp_serisi, ilk_3_hp_tarihleri, ilk_3_hp_ham, ilk_3_hp_kcinsleri = atin_ilk_3_hp_bilgisi(df)
 

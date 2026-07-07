@@ -250,7 +250,7 @@ function tabloHTML(t){
 const BASLIK_TD = ["No","At","Kilo","E.Kilo","K.Fark","Koşu Cinsi","?7","?8","Tarih","Şehir",
   "Zemin","?12","Pist","Mesafe","Derece","M.Derece","?17","Yaş/Cins","?19","?20","",
   "Galop","Son HP","?24","D50 HP","D50 Kilo","D66 HP","D66 Kilo","D75 HP","D75 Kilo",
-  "Koşu Cinsi","?32","Seyir","Üçgen"];
+  "Koşu Cinsi","?32","","Seyir","Üçgen"];
 const BASLIK_S8 = ["No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Kilo","E.Kilo",
   "K.Fark","Koşu Cinsi","?13","Son 800","Fark","?16","?17","?18","",
   "D50 HP","D50 Kilo","D66 HP","D66 Kilo","D75 HP","D75 Kilo","Seyir","Üçgen","F.Üçgen"];
@@ -262,7 +262,7 @@ const DOMK = {"Sayfa1":[25,26,27,28,29,30], "Sayfa2":[20,21,22,23,24,25]};
 // SON HP: HP listesinin yalnız SON değeri gösterilir (AP sütunu isteği)
 const SONHP = {"Sayfa1":[23], "Sayfa2":[]};
 // SEYİR: stil sayısı + üçgen TEK hücrede (başlık 'Seyir')
-const SEYIR = {"Sayfa1":[33,34], "Sayfa2":[26,27]};
+const SEYIR = {"Sayfa1":[34,35], "Sayfa2":[26,27]};
 // YAŞ/CİNS kodu çevirisi: '4y a a' -> son harf a/i/e/g=Erkek, k/d=Dişi
 const YASCINS = {"Sayfa1":[18], "Sayfa2":[]};
 function yasCinsCevir(v){
