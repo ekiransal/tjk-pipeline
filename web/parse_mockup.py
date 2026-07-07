@@ -184,6 +184,42 @@ for rol, sh in esleme.items():
         print(f"{rol} <- '{sh}': {len(out[rol])} koşu | detay satırı: {det}")
 
 # ---------------------------------------------------------------------------
+# SON 800 DOMİNANS HİZALAMA (BAY OLOF vakası):
+#   Pipeline 800 sayfasında dominans satır kaymasıyla YANLIŞ gelebiliyor
+#   (koşu anahtarı tutmayınca bir üst satırın değerine düşüyor).
+#   DOĞRUSU: aynı at+tarih+şehir koşusunun Toplam Derece dominansı.
+#   TD'de olmayan koşuların dominansı BOŞ bırakılır — yanlış göstermekten iyidir.
+# ---------------------------------------------------------------------------
+if "Sayfa1" in out and "Sayfa2" in out:
+    td_map = {}
+    for b in out["Sayfa1"]:
+        for r in b["detay"]:
+            at = re.sub(r"\d+$", "", str(r[1]).strip().upper()).strip()
+            if not at:
+                continue
+            key = (at, str(r[8]).strip(), str(r[9]).strip().upper())
+            td_map[key] = [(r[i] if i < len(r) else "") for i in range(24, 30)]
+    _duz = _bos = 0
+    for b in out["Sayfa2"]:
+        for r in b["detay"]:
+            at = str(r[1]).strip().upper()
+            if not at:
+                continue
+            key = (at, str(r[2]).strip(), str(r[3]).strip().upper())
+            dom = td_map.get(key)
+            while len(r) < 25:
+                r.append("")
+            if dom:
+                for i in range(6):
+                    r[19 + i] = dom[i]
+                _duz += 1
+            else:
+                for i in range(6):
+                    r[19 + i] = ""
+                _bos += 1
+    print(f"800 dominans hizalama: {_duz} satır TD'den eşlendi, {_bos} satır (TD'de karşılığı yok) boşaltıldı")
+
+# ---------------------------------------------------------------------------
 # EXTREMLER: uzun aradan gelen + çok sık koşan atlar (sağ üst kutu için)
 # ---------------------------------------------------------------------------
 import datetime
