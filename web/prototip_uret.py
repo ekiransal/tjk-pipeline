@@ -357,7 +357,11 @@ function galopSatir(r){
     <span class="gtarih">${esc(r[1]||"")}${r[2]?`<br><span class="gsehir">${esc(r[2])}</span>`:""}</span></div>`;
 }
 
-function tabloHTML(t){
+function tabloHTML(t, zemin){
+  // Mesafe tablosu başlığı KOŞUNUN ZEMİNİNE göre: Kum/Çim -> "Bu Zemin ve Mesafedeki",
+  // Sentetik -> "Bu Mesafedeki" (sentetikte zemin ayrımı yok)
+  const sentetik=String(zemin||"").toUpperCase().includes("SENTET");
+  const mesafeAd=sentetik?"Bu Mesafedeki Payı":"Bu Zemin ve Mesafedeki Payı";
   // SIRALAMA: Değer büyükten küçüğe; EŞİTSE Sayı'nın payı (267/1726 -> 267) büyük olan ÜSTTE
   const trows=t.rows.slice().sort((a,b)=>{
     const dv=s=>{const f=parseFloat(String(s).replace(",","."));return isNaN(f)?-Infinity:f;};
@@ -373,9 +377,9 @@ function tabloHTML(t){
       <td class="deg"><div class="bar" style="width:${w}%"></div><span>${esc(r[1])}</span></td>
       <td class="say">${esc(r[2])}</td></tr>`;
   }).join("");
-  const ORJ_AD={"Kalite":"Baba: Elit Kazanç","Mesafe":"Baba: Bu Mesafedeki Payı",
-                "Sprinter":"Baba: Sprintle Kazanç","Kaçak":"Baba: Kaçarak Kazanç",
-                "Dede Kalite":"Anne Baba (Dede): Elit Kazanç","Dede Mesafe":"Anne Baba (Dede): Bu Mesafedeki Payı"};
+  const ORJ_AD={"Kalite":"Babanın Yavruları: Elit Kazanç","Mesafe":"Babanın Yavruları: "+mesafeAd,
+                "Sprinter":"Babanın Yavruları: Sprintle Kazanç","Kaçak":"Babanın Yavruları: Kaçarak Kazanç",
+                "Dede Kalite":"Dedenin Yavruları: Elit Kazanç","Dede Mesafe":"Dedenin Yavruları: "+mesafeAd};
   return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${ORJ_AD[t.name]||t.name}</h4>
     <table><tr><th>No</th><th>Değer</th><th>Sayı</th></tr>${rows}</table></div>`;
 }
@@ -785,8 +789,8 @@ function kartHTML(b){
     ${gecUyarilar(b, "Sayfa1")}
 
     <div class="bol-baslik">Orijin Analizi</div>
-    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — ilk 4 tablo BABA · son 2 tablo ANNE BABA (DEDE)</div>
-    <div class="tablolar hepsi">${setA.concat(setDede).map(tabloHTML).join("")}</div></div>
+    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavrularının başarıları</div>
+    <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
 
     <div class="bol-baslik">Galoplar</div>
     <div class="galoprow">

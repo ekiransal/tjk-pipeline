@@ -71,3 +71,9 @@ echo ""
 echo "=================  BİTTİ ✔  ->  yeni_yer_SONUC.xlsx  =========="
 echo "Sayfalar: Sayfa1, Sayfa2, yeni yer, derece(+Stil Üçgen), 800, yapılacak yer, yapılacak yer 800"
 echo "Web: web/tjk_analiz_prototip.html (çift tıkla aç)"
+
+echo ""
+echo "================= 6/6  SİTEYE YÜKLE (ganyanradar.com) ========="
+scp -o ConnectTimeout=15 web/tjk_analiz_prototip.html root@185.111.235.75:/opt/ganyanradar/analiz/tjk_analiz_prototip.html \
+  && echo "SİTE GÜNCELLENDİ -> https://ganyanradar.com" \
+  || echo "UYARI: siteye yükleme BAŞARISIZ (site eski günle kaldı)"
