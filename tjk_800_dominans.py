@@ -165,6 +165,11 @@ _IDX_D_TARIH = 33
 _IDX_D_SEHIR = 34
 _IDX_D_PIST = 35
 _IDX_D_MESAFE = 37
+# 800 KOŞUSUNUN kendi alanları (satırın gösterdiği koşu bunlardır):
+_IDX_8_TARIH = 6     # col 7  Tarih_800
+_IDX_8_SEHIR = 7     # col 8  Sehir_800
+_IDX_8_ZEMIN = 8     # col 9  Zemin_800  (Veri'deki 'Pist' = Çim/Kum/Sentetik ile aynı)
+_IDX_8_MESAFE = 10   # col 11 Mesafe_800
 
 
 _IDX_STIL = 77   # col 77 = BY_derece_Stil (%45 Seyir Sırası)
@@ -221,9 +226,13 @@ def yeni_yer_800_uret(yeniyer_rows, ref_map):
         ad = clean_horse_name(_s(r2[_IDX_AT_ADI])) if len(r2) > _IDX_AT_ADI else ""
         # önce KOŞU anahtarıyla dene
         kk = None
-        if len(r2) > _IDX_D_MESAFE:
-            kk = kosu_key(r2[_IDX_AT_ADI], r2[_IDX_D_TARIH], r2[_IDX_D_SEHIR],
-                          r2[_IDX_D_PIST], r2[_IDX_D_MESAFE])
+        if len(r2) > _IDX_8_MESAFE:
+            # DÜZELTME (BAY OLOF vakası): anahtar satırın 800 KOŞUSUNDAN kurulur
+            # (_800 alanları). Eskiden derece koşusunun anahtarı kullanılıyordu;
+            # 800 sayfası satırın 800 koşusunu gösterdiği için eski HP/kilo ve
+            # dominans YANLIŞ koşuya (bir üstteki derece koşusuna) kayıyordu.
+            kk = kosu_key(r2[_IDX_AT_ADI], r2[_IDX_8_TARIH], r2[_IDX_8_SEHIR],
+                          r2[_IDX_8_ZEMIN], r2[_IDX_8_MESAFE])
         ref = ref_map.get(kk) if kk else None
         if ref:
             _kosu_es += 1

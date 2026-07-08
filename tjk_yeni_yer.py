@@ -1015,13 +1015,17 @@ def main():
                 grid_800_city = yapilacak_yer_uret(yeniyer_800_city, sayfa1_city, sehir=sehir,
                                                    refs4=refs4, yon4=yon4)
                 grids_800.append((sehir, grid_800_city))
-                # DOMİNANS: NORMAL (per-koşu) yeni yer satırlarından hesapla. Her koşunun
-                # KENDİ saha HP/kilo listesinden 50/66/75 persentili -> her koşu farklı.
-                # (son800 tek-referansı at başına sabit veriyordu; ondan vazgeçildi.)
-                # STİL: aynı satırlardan %45 seyir sırası -> stil üçgeni için.
+                # DOMİNANS DÜZELTME (BAY OLOF vakası): harita 800-DÖNÜŞTÜRÜLMÜŞ
+                # satırlardan kurulur (yeniyer_800_city). Böylece eski taraf (Eski
+                # HP/kilo + saha listeleri) satırın 800 KOŞUSUNA aittir ve anahtar
+                # (_800 alanları) ile değer AYNI koşuyu anlatır. Eskiden NORMAL
+                # satırlar kullanılıyordu: anahtar 800 koşusunu, değer derece
+                # koşusunu gösteriyordu -> S8'de dominans bir satır kayıyordu.
+                # STİL: %45 seyir sırası — normal satırlardan (değişmedi).
                 try:
                     anaNc = [list(YY.YENI_YER_BASLIK)] + [list(r) for r in yeniyer_city]
-                    dom800_harita.update(D8.dominans_haritasi(anaNc))
+                    ana8 = [list(YY.YENI_YER_BASLIK)] + [list(r) for r in yeniyer_800_city]
+                    dom800_harita.update(D8.dominans_haritasi(ana8))
                     stil800_harita.update(D8.stil_haritasi(anaNc))
                 except Exception as e:
                     print(f"      UYARI: 800 dominans/stil haritası kurulamadı: {e}")

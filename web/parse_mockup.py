@@ -214,10 +214,8 @@ if "Sayfa1" in out and "Sayfa2" in out:
                     r[19 + i] = dom[i]
                 _duz += 1
             else:
-                for i in range(6):
-                    r[19 + i] = ""
-                _bos += 1
-    print(f"800 dominans hizalama: {_duz} satır TD'den eşlendi, {_bos} satır (TD'de karşılığı yok) boşaltıldı")
+                _bos += 1   # TD penceresi dışı (6ay-375g): pipeline'ın (yamalı) kendi değeri KORUNUR
+    print(f"800 dominans hizalama: {_duz} satır TD'den eşlendi, {_bos} satır TD dışı (pipeline değeri korundu)")
 
 # ---------------------------------------------------------------------------
 # EXTREMLER: uzun aradan gelen + çok sık koşan atlar (sağ üst kutu için)
