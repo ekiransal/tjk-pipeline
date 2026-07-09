@@ -182,7 +182,7 @@ HTML = r"""<!DOCTYPE html>
   .gsehir{color:var(--acc);font-size:9.5px;font-weight:600}
   .bos{color:var(--mut);font-size:12px;font-style:italic;padding:6px 0}
   .tablonot{color:var(--mut);font-size:11.5px;font-style:italic;margin-top:8px}
-  .tablonot.ustte{margin:0 0 6px;text-align:right}
+  .tablonot.ustte{margin:0 0 6px;text-align:left}
   /* ANALİZ TABLOLARI */
   .tablolar{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
   .tablo{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -192,7 +192,14 @@ HTML = r"""<!DOCTYPE html>
   .t-Kalite .nk{background:#1e6f5c}.t-Mesafe .nk{background:#2f6fb3}
   .t-Sprinter .nk{background:#c8542a}.t-Kaçak .nk{background:#8a56c9}
   .t-Dede-Kalite .nk{background:#0f4d40}.t-Dede-Mesafe .nk{background:#1d4e80}
-  .tablolar.hepsi{grid-template-columns:repeat(6,1fr)}
+  .tablolar.hepsi{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px}   /* SOLA YASLI, içerik kadar */
+  .tablolar.hepsi .tablo{flex:0 1 auto;width:188px}
+  .tablolar.hepsi .tablo h4{font-size:11px;padding:7px 9px 5px;gap:5px}
+  .tablolar.hepsi .tablo h4 .nk{width:7px;height:7px}
+  .tablolar.hepsi th{font-size:8.5px;padding:3px 4px;letter-spacing:.1px}
+  .tablolar.hepsi td{font-size:10px;padding:3px 4px}
+  .tablolar.hepsi td.no{width:26px}
+  .tablolar.hepsi td.say{font-size:9.5px}
   @media(max-width:1150px){.tablolar.hepsi{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:700px){.tablolar.hepsi{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:440px){.tablolar.hepsi{grid-template-columns:1fr}}
@@ -225,6 +232,9 @@ HTML = r"""<!DOCTYPE html>
   .detay td.kfiyi{color:#1a7f4b;font-weight:700}
   .detay td.kfkotu{color:#c23a3a;font-weight:700}
   .detay td.dom{font-weight:700}
+  .detay td.dom.poz{color:#1a7f4b}
+  .detay td.dom.neg{color:#c23a3a}
+  .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:1;min-width:0}
@@ -241,6 +251,8 @@ HTML = r"""<!DOCTYPE html>
   .ex-satir .gun{margin-left:auto;font-weight:800;white-space:nowrap}
   .ex-satir.sik .gun{color:#c23a3a}
   .ex-satir.uzun .gun{color:#2f6fb3}
+  .ex-satir.gec .gun,.ex-satir.dsiz .gun{color:#c77f00;font-size:11px}
+  .ex-satir.dsiz .gun{color:#8a5ac2}
   @media(max-width:900px){.satir{flex-direction:column-reverse}#yan{width:100%}}
   /* AGF */
   .agf{padding:40px;text-align:center;color:var(--mut)}
@@ -305,8 +317,12 @@ function ciz(){
     t.classList.toggle("on",t.dataset.t===secTab);
     t.onclick=()=>{
       if(t.dataset.t==="AGF"){   // AGF: TJK programı SEÇİLİ İLLE yeni sekmede
-        const u=(DATA.sehir_link||{})[secIl]
-              || "https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami";
+        const SL=DATA.sehir_link||{};
+        const gecerli=x=>(typeof x==="string"&&/^https?:\/\//i.test(x))?x:"";   // "javascript: void(0)" gibi sahte linkler ELENİR
+        const ham=gecerli(SL.agf&&SL.agf[secIl])||gecerli(SL.program&&SL.program[secIl])||gecerli(SL[secIl])||"";
+        // Info/Sehir = süssüz iç parça -> Info/Page = tam görünümlü sayfa (şehir sekmesi seçili)
+        const u=ham?ham.replace(/\/Info\/Sehir\//i,"/Info/Page/")
+                    :"https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami";
         window.open(u,"_blank");
         return;
       }
@@ -322,11 +338,34 @@ function ciz(){
     const uzun=exK.filter(e=>e.tip==="uzun").sort((a,b)=>b.gun-a.gun);
     const sat=e=>`<div class="ex-satir ${e.tip}"><span class="kno">${esc(e.atno)}</span>
       <span>${esc(e.at)}</span><span class="gun">${e.gun}g</span></div>`;
+    // GEÇ ÇIKIŞ / DERECESİZ: seçili koşunun atları, AT NO ile birlikte
+    const gecler=(()=>{
+      const gec=DATA.gec_cikis||{}; const out=[];
+      const b1=blokBul("Sayfa1",secIl,secKosu);
+      if(Object.keys(gec).length&&b1){
+        const gor=new Set();
+        for(const r of (b1.detay||[])){
+          const no=String(r[0]??"").trim();
+          const at=String(r[1]??"").trim().toUpperCase().replace(/\d+$/,"").trim();
+          if(!at||gor.has(at)) continue; gor.add(at);
+          const v=gec[at]; if(!v||!v.problem) continue;
+          const g=v.kosular.filter(k=>k.boy).map(k=>`${k.tarih} (${k.boy})`).join(", ");
+          const ds=v.kosular.filter(k=>k.dsiz).map(k=>k.tarih).join(", ");
+          if(g)  out.push({tip:"gec",  no, at, det:g});
+          if(ds) out.push({tip:"dsiz", no, at, det:ds});
+        }
+      }
+      return out;
+    })();
+    const gsat=e=>`<div class="ex-satir ${e.tip}"><span class="kno">${esc(e.no)}</span>
+      <span>${esc(e.at)}</span><span class="gun">${esc(e.det)}</span></div>`;
     yan.innerHTML=`<div class="kart extrem"><h3>⚠️ Dikkat — ${esc(secKosu)}. Koşu
       <span style="color:var(--mut);font-weight:600;font-size:11px">${esc(DATA.extremler.hedef||"")}</span></h3>
       ${sik.length?`<div class="grup">Sık koşan (≤${DATA.extremler.sik_gun} gün)</div>${sik.map(sat).join("")}`:""}
       ${uzun.length?`<div class="grup">Uzun ara (≥${DATA.extremler.uzun_gun} gün)</div>${uzun.map(sat).join("")}`:""}
-      ${(!sik.length&&!uzun.length)?'<div class="bos">bu koşuda extrem at yok</div>':""}
+      ${gecler.some(e=>e.tip==="gec")?`<div class="grup">⚠ Geç çıkış</div>${gecler.filter(e=>e.tip==="gec").map(gsat).join("")}`:""}
+      ${gecler.some(e=>e.tip==="dsiz")?`<div class="grup">⚠ Derecesiz</div>${gecler.filter(e=>e.tip==="dsiz").map(gsat).join("")}`:""}
+      ${(!sik.length&&!uzun.length&&!gecler.length)?'<div class="bos">bu koşuda dikkat gerektiren at yok</div>':""}
     </div>`;
   }
 
@@ -340,6 +379,14 @@ function ciz(){
   const b=blokBul(secTab,secIl,secKosu);
   if(!b){ ic.innerHTML='<div class="kart bos">Bu koşu için veri yok.</div>'; return; }
   ic.innerHTML=kartHTML(b);
+  // DİKKAT PANELİ HİZASI: sağ kenarı Toplam Derece tablosunun sağ kenarına çekilir
+  requestAnimationFrame(()=>{
+    const ub=document.querySelector(".ustblok"), d=document.querySelector("#icerik .detay");
+    if(ub&&d){
+      const w=d.getBoundingClientRect().right - ub.getBoundingClientRect().left;
+      ub.style.maxWidth=Math.max(620, Math.round(w))+"px";
+    }
+  });
   // VARSAYILAN: detay tablosu Derece'ye göre KÜÇÜKTEN BÜYÜĞE açılır
   ic.querySelectorAll(".detay table").forEach(t=>{ if(t.dataset.drc) siralaUygula(t, t.dataset.drc); });
 }
@@ -376,9 +423,9 @@ function tabloHTML(t, zemin){
       <td class="deg"><div class="bar" style="width:${w}%"></div><span>${esc(r[1])}</span></td>
       <td class="say">${esc(r[2])}</td></tr>`;
   }).join("");
-  const ORJ_AD={"Kalite":"Babanın Yavruları: Elit Kazanç","Mesafe":"Babanın Yavruları: "+mesafeAd,
-                "Sprinter":"Babanın Yavruları: Sprintle Kazanç","Kaçak":"Babanın Yavruları: Kaçarak Kazanç",
-                "Dede Kalite":"Dedenin Yavruları: Elit Kazanç","Dede Mesafe":"Dedenin Yavruları: "+mesafeAd};
+  const ORJ_AD={"Kalite":"Babanın Yavruları: Elit Kazanma","Mesafe":"Babanın Yavruları: "+mesafeAd,
+                "Sprinter":"Babanın Yavruları: Sprintle Kazanma","Kaçak":"Babanın Yavruları: Kaçarak Kazanma",
+                "Dede Kalite":"Dedenin Yavruları: Elit Kazanma","Dede Mesafe":"Dedenin Yavruları: "+mesafeAd};
   // Sayı başlığı tabloya özel AÇIKLAMALI (mutfak eşiği ifşa edilmeden)
   const SAYI_AD={"Kalite":"Elit Kazanma / Toplam Kazanma","Mesafe":"Bu Mesafede / Toplam Kazanma",
                  "Sprinter":"Sprintle / Toplam Kazanma","Kaçak":"Kaçarak / Toplam Kazanma",
@@ -390,11 +437,11 @@ function tabloHTML(t, zemin){
 // MOBİLDE GİZLENEN ikincil kolonlar (telefonda sade görünüm; 'tüm kolonlar' ile açılır)
 const MGIZ = {"Sayfa1":[3,4,6,10,11,13,16,18,22,23,24,31,32], "Sayfa2":[4,5,6,9,10,12,16,17,18]};
 let mTum=false;   // true = telefonda da tüm kolonlar
-const BASLIK_TD = ["No","At","Y.Kilo","E.Kilo","Kilo Farkı","Koşu Cinsi","?7","?8","Tarih","Şehir",
+const BASLIK_TD = ["At No","At","Y.Kilo","E.Kilo","Kilo Farkı","Koşu Cinsi","?7","?8","Tarih","Şehir",
   "Zemin","?12","Pist","Mesafe","Derece","M.Derece","?17","Yaş/Cins","?19","Kaçıncı","",
   "İlk 3 HP'si","Güncel HP","?24","Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı",
   "Koşu Cinsi","?32","","Seyir","Üçgen"];
-const BASLIK_S8 = ["No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Y.Kilo","E.Kilo",
+const BASLIK_S8 = ["At No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Y.Kilo","E.Kilo",
   "Kilo Farkı","Koşu Cinsi","?13","Son 800","Fark","Net Son 800","?17","?18","Kaçıncı",
   "Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı","Seyir","Üçgen","F.Üçgen"];
 
@@ -439,7 +486,7 @@ function detayHTML(b, tab){
   const [seyA,seyB]=(SEYIR[tab]||[0,0]).map(x=>x-1);
   const dolu=[];
   for(let c=0;c<42;c++){
-    if(sil.has(c)||c===seyB||domKilo.has(c)) continue;
+    if(sil.has(c)||c===seyB||domKilo.has(c)||c===41) continue;   // 41 = GECMIS_YOK işaretleyici, görünmez
     if(rows.some(r=>String(r[c]??"").trim()!=="") || c===seyA || (tab==="Sayfa2"&&c===18)) dolu.push(c);   // S8: Kaçıncı sentetik
   }
   // Handikap ile İlk 3 HP yer değiştirir (Handikap önce)
@@ -458,6 +505,25 @@ function detayHTML(b, tab){
   }
   // filtreli kolonlar + otomatik sıralama kolonu (Derece / Son 800)
   const FK = tab==="Sayfa1" ? {no:0,sehir:9,msf:13,tarih:8,drc:14,kf:4,zemin:10} : {no:0,sehir:3,msf:7,tarih:2,drc:15,kf:10,zemin:4};   // S8 sıralama: Net Son 800 (c15)
+  // KOLON TAŞIMA: kol'u hedef'in hemen soluna getirir
+  const tasi=(kol,hedef)=>{ const i=dolu.indexOf(kol); if(i<0) return;
+    dolu.splice(i,1); const j=dolu.indexOf(hedef);
+    if(j<0){ dolu.splice(i,0,kol); return; } dolu.splice(j,0,kol); };
+  tasi(FK.tarih, FK.drc);                 // Tarih -> Derece'nin soluna (iki tabloda da)
+  if(tab==="Sayfa1") tasi(17,22);         // Yaş/Cins -> Güncel HP'nin soluna
+  // DERECE'den hemen sonra: P50 · P66 · P75 · Yarıştaki Seyri · Kaçıncı, sonra kalanlar
+  {
+    const kacinci = tab==="Sayfa1" ? 19 : 18;
+    const zincir=[...domList.filter(c=>!domKilo.has(c)), seyA, kacinci];
+    let hIdx=dolu.indexOf(FK.drc);
+    for(const kol of zincir){
+      const i=dolu.indexOf(kol); if(i<0) continue;
+      dolu.splice(i,1);
+      if(i<hIdx) hIdx--;
+      dolu.splice(hIdx+1,0,kol);
+      hIdx++;
+    }
+  }
   const kutuPanel=(c)=>{
     const uniq=[...new Set(rows.map(r=>String(r[c]??"").trim()).filter(v=>v!==""))];
     if(uniq.length<2) return "";
@@ -476,7 +542,7 @@ function detayHTML(b, tab){
   const th=dolu.map(c=>{
     let ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
     if(domk.has(c)){ const g0=domGrp(c);
-      ad=g0==="g50"?"Genel HP/KG Avantajı":(g0==="g66"?"Orta HP/KG Avantajı":"İnce HP/KG Avantajı"); }
+      ad=g0==="g50"?"P50 HP/KG Avantajı":(g0==="g66"?"P66 HP/KG Avantajı":"P75 HP/KG Avantajı"); }
     let f="";
     if(c===FK.no||c===FK.sehir||c===FK.msf||c===FK.zemin) f=kutuPanel(c);
     else if(c===FK.tarih&&tab==="Sayfa1") f=secimPanel(c,"trh",[["60","Son 2 Ay"],["","Tümü"]]);
@@ -496,7 +562,7 @@ function detayHTML(b, tab){
     // KAYIP AT: geçmişi olmayan at tek satırla gösterilir (görünmez olmaz)
     if(String(r[41]||"")==="GECMIS_YOK"){
       _oncekiAt=String(r[1]??"").trim().toUpperCase();
-      return `<tr class="grupbas gecmisyok"><td class="num" data-c="0" data-v="${esc(r[0])}">${esc(r[0])}</td>`+
+      return `<tr class="grupbas gecmisyok"><td class="num drc" data-c="0" data-v="${esc(r[0])}">${esc(r[0])}</td>`+
         `<td class="atadi" data-c="1" data-v="${esc(r[1])}">${esc(r[1])}</td>`+
         `<td colspan="${dolu.length-2}" style="text-align:left;color:#8a93a5;font-style:italic;padding-left:10px">`+
         `son 6 ayda ilk-4 derecesi bulunmuyor</td></tr>`;
@@ -509,6 +575,7 @@ function detayHTML(b, tab){
     let v=String(r[c]??"").trim();
     let cls="";
     if(c===1){ cls="atadi"; v=v.replace(/\d+$/,"").trim(); }   // TESCİL1 -> TESCİL
+    else if(c===FK.no){ cls="num drc"; }                                 // At No: Derece gibi KOYU
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
     else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc"; }            // tarih: Derece gibi KOYU
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
@@ -524,12 +591,15 @@ function detayHTML(b, tab){
       v=p.length?p[p.length-1]:v; cls="num";
     }
     else if(domk.has(c)){                       // BİRLEŞİK AVANTAJ: HP + 2 x Kilo (tek sayı, RENKSİZ)
-      if(domGizle){ v=""; cls="num dom"; }       // Maiden / Şartlı 1 / Şartlı 19 -> yazılmaz
+      if(domGizle){                                 // Maiden / Şartlı 1 / Şartlı 19 -> ortada soluk etiket, yanlarda tire
+        const kisa=kcinsUp.startsWith("MAIDEN")?"Maiden":(kcinsUp.includes("19")?"Şartlı 19":"Şartlı 1");
+        v=(c===domList[2])?kisa:"—"; cls="num dom yokd";
+      }
       else{
         const hp=parseFloat(v.replace(",","."));
         const kl=parseFloat(String(r[c+1]??"").replace(",","."));
         const f2=isNaN(hp)?NaN:(hp + 2*(isNaN(kl)?0:kl));
-        cls="num dom";
+        cls="num dom "+(f2>0?"poz":(f2<0?"neg":""));
         if(!isNaN(f2)){ const yv=Math.round(f2*100)/100; v=(yv>0?"+":"")+yv; } else v="";
       }
     }
@@ -691,28 +761,6 @@ function tabloSirala(th){ // 1. tık: küçükten büyüğe (▲) | 2. tık: esk
   siralaUygula(table,c);
 }
 
-function gecUyarilar(b, tab){
-  const gec=DATA.gec_cikis||{};
-  if(!Object.keys(gec).length) return "";
-  const atlar=new Set();
-  for(const r of (b.detay||[])){
-    let at=String(r[1]??"").trim().toUpperCase();
-    if(tab==="Sayfa1") at=at.replace(/\d+$/,"").trim();
-    if(at) atlar.add(at);
-  }
-  const uyari=[];
-  for(const at of atlar){
-    const v=gec[at];
-    if(v && v.problem){
-      const g=v.kosular.filter(k=>k.boy).map(k=>`${k.tarih} (${k.boy})`).join(", ");
-      const ds=v.kosular.filter(k=>k.dsiz).map(k=>k.tarih).join(", ");
-      if(g)  uyari.push(`<span class="m vurgu"><b>⚠ Geç Çıkış</b>${esc(at)}: ${esc(g)}</span>`);
-      if(ds) uyari.push(`<span class="m vurgu"><b>⚠ Derecesiz</b>${esc(at)}: ${esc(ds)}</span>`);
-    }
-  }
-  return uyari.length?`<div class="meta" style="margin-top:8px">${uyari.join("")}</div>`:"";
-}
-
 function drcFmt(v){
   // Derece santisaniye (7695 -> 1.16.95, 14005 -> 2.20.05); sayı değilse aynen
   const n=parseInt(String(v).trim(),10);
@@ -786,18 +834,28 @@ function derecelerBolum(){
 
 function kartHTML(b){
   const h=b.header;
+  const kosuCinsi=String(b.title||"").replace(/^\d+\.\s*Koşu\s*/,"").split(",")[0].trim();
+  const kosuOzet=[kosuCinsi, h["Mesafe"], h["Zemin"]].filter(Boolean).join(" ");
+
   const meta=["Mesafe","Zemin","Irk"].filter(k=>h[k])
     .map(k=>`<span class="m"><b>${k}</b>${esc(h[k])}</span>`).join("");
-  // Yorum: teknik terim -> müşteri dili
-  const YORUM_TR={"SPRINTER":"sonu kuvvetli","STALKER":"toplam derecesi iyi",
-                  "KAÇAK":"önlerde gitmeyi seven","KACAK":"önlerde gitmeyi seven"};
-  const yorumCvr=String(h["Yorum"]||"").split("/").map(x=>{
-    const k=x.trim().toUpperCase(); return YORUM_TR[k]||x.trim();}).filter(Boolean).join(" veya ");
-  const yorum=yorumCvr?`<span class="m vurgu"><b>Yorum</b>${esc(yorumCvr)}</span>`:"";
-  // Final: ham sayı yerine KADEME kelimesi (mutfak değeri ifşa edilmez)
   const _fv=Math.abs(parseFloat(String(h["Final"]||"").replace(",",".")));
-  const _fk=isNaN(_fv)?"":(_fv<3?"nötr":_fv<10?"zayıf":_fv<20?"orta":_fv<35?"kuvvetli":"çok kuvvetli");
-  const final=(h["Final"]&&_fk)?`<span class="m vurgu"><b>Kuvvet</b>${_fk}</span>`:"";
+  const _notr=(!isNaN(_fv)&&_fv<10);                          // -10..+10 -> NÖTR
+  // YORUM KURALI: çift laf yok — Sprinter baskın ("sonu kuvvetli");
+  // Kaçak+Stalker birlikte -> "toplam derecesi iyi"; tekiller kendi karşılığı.
+  const _tok=String(h["Yorum"]||"").toUpperCase();
+  let yorumCvr="";
+  if(_tok.includes("SPRINTER")) yorumCvr="sonu kuvvetli";
+  else if((_tok.includes("KAÇAK")||_tok.includes("KACAK"))&&_tok.includes("STALKER")) yorumCvr="toplam derecesi iyi";
+  else if(_tok.includes("KAÇAK")||_tok.includes("KACAK")) yorumCvr="önde gitmeyi seven";
+  else if(_tok.includes("STALKER")) yorumCvr="toplam derecesi iyi";
+  else if(_tok.includes("NÖTR")||_tok.includes("NOTR")) yorumCvr="Nötr";
+  else yorumCvr=String(h["Yorum"]||"").trim();
+  const yorumSon=_notr?"Nötr":yorumCvr;
+  const yorum=yorumSon?`<span class="m vurgu"><b>Yorum</b>${esc(yorumSon)}</span>`:"";
+  // Final: ham sayı yerine KADEME kelimesi (mutfak değeri ifşa edilmez)
+  const _fk=isNaN(_fv)?"":(_fv<20?"orta":_fv<35?"belirgin":"çok belirgin");
+  const final=(h["Final"]&&_fk&&!_notr)?`<span class="m vurgu"><b>Kuvvet</b>${_fk}</span>`:"";
   const gNorm=b.galops.filter(g=>!g.son), gSon=b.galops.filter(g=>g.son);
   const pnl=(g)=>`<div class="panel${g.son?" sonp":""}"><h4>${esc(String(g.name).replace(/\s*\+\s*400/g,""))}</h4>
       ${g.rows.length?g.rows.map(galopSatir).join(""):'<div class="bos">kayıt yok</div>'}</div>`;
@@ -812,7 +870,6 @@ function kartHTML(b){
       <span class="m"><b>Koşu</b>${esc(h["Koşu No"]||"")}</span>
       ${meta}${yorum}${final}
     </div>
-    ${gecUyarilar(b, "Sayfa1")}
 
     <div class="bol-baslik">Galoplar</div>
     <div class="galoprow">
@@ -822,15 +879,17 @@ function kartHTML(b){
         <div class="paneller tekhiza">${gSon.map(pnl).join("")||'<div class="bos">son galop verisi yok</div>'}</div></div>
     </div>
 
-    <div class="bol-baslik">Toplam Derece — Detay</div>
-    <div class="tablonot ustte">Not: Avantaj sütunları handikap puanı cinsindendir; sıklet farkları genel hükümler (7. md., ½ kg = 1 puan) uyarınca hesaba katılmıştır. Artı (+) değer atın öne çıkabileceğini, eksi (−) değer geride kalabileceğini gösterir. Kilo Farkı'nda daha az kilo taşımak avantaj olduğundan eksi (−) değerler yeşildir.</div>
+    <div class="bol-baslik">Toplam Derece — Detay · ${kosuOzet}</div>
+    <div class="tablonot ustte">Not: Yeşil avantaj, kırmızı dezavantaj — işaret değil renk esastır. P50/P66/P75: atın eski koşusuna göre yeni koşudaki avantajı gösterir. Kilo Farkı'nda eksi değer (kilo düşmesi) avantajdır.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
-      return b8?`<div class="bol-baslik">Son 800 — Detay</div>${detayHTML(b8,"Sayfa2")}`:"";})()}
+      return b8?`<div class="bol-baslik">Son 800 — Detay · ${kosuOzet}</div>
+    <div class="tablonot ustte">Not: Yeşil avantaj, kırmızı dezavantaj — işaret değil renk esastır. P50/P66/P75: atın eski koşusuna göre yeni koşudaki avantajı gösterir. Kilo Farkı'nda eksi değer (kilo düşmesi) avantajdır.</div>
+    ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
-    <div class="bol-baslik">Orijin Analizi</div>
-    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavrularının başarıları</div>
+    <div class="bol-baslik">Orijin Analizi · ${kosuOzet}</div>
+    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavruları</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
 }
