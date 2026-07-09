@@ -247,9 +247,12 @@ HTML = r"""<!DOCTYPE html>
   .detay td.dom.poz{color:#1a7f4b}
   .detay td.dom.neg{color:#c23a3a}
   .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
-  /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at */
+  /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at (numara geçen HER YERDE) */
   .chip.bitti:not(.on){background:#eaf6ee;border-color:#bfe3cc;color:#1a7f4b}
   .detay td.kazanan{color:#1a7f4b !important;font-weight:800}
+  .kzn{color:#1a7f4b !important;font-weight:800 !important;white-space:nowrap}
+  td.no.kzn{width:auto !important;background:#eaf6ee}
+  .ex-satir .kno.kzn{background:#eaf6ee}
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:1;min-width:0}
@@ -408,6 +411,21 @@ function ciz(){
       ub.style.maxWidth=Math.max(620, Math.round(w))+"px";
     }
   });
+  // KAZANAN İŞARETİ HER YERDE: galop satırları, orjin tabloları, dikkat paneli.
+  // (Detay tablolarındaki ✓ kartHTML içinde basılır; burası numara geçen diğer yerler.)
+  (()=>{
+    const _sn=(typeof sonucGecerli==="function"&&sonucGecerli())
+      ?(((SONUC.iller||{})[secIl]||{})[String(secKosu)]):null;
+    if(!_sn||_sn.kazanan==null) return;
+    const kz=String(_sn.kazanan);
+    document.querySelectorAll("#icerik .g-satir .atno, #icerik .tablolar.hepsi td.no, #yan .ex-satir .kno")
+      .forEach(e=>{
+        if(e.textContent.replace("✓","").trim()===kz){
+          e.classList.add("kzn");
+          if(!e.textContent.includes("✓")) e.textContent=e.textContent.trim()+" ✓";
+        }
+      });
+  })();
   // VARSAYILAN: detay tablosu Derece'ye göre KÜÇÜKTEN BÜYÜĞE açılır
   ic.querySelectorAll(".detay table").forEach(t=>{ if(t.dataset.drc) siralaUygula(t, t.dataset.drc); });
 }
