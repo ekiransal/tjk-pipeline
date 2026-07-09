@@ -184,6 +184,61 @@ for rol, sh in esleme.items():
         print(f"{rol} <- '{sh}': {len(out[rol])} koşu | detay satırı: {det}")
 
 # ---------------------------------------------------------------------------
+# KAYIP AT KORUMASI (İSEN BUGA vakası):
+#   Derece verisi 'son 6 ayda İLK 4' filtreli olduğundan hiç ilk-4 yapamayan at
+#   TD tablosunda GÖRÜNMEZ oluyordu. Koşunun at listesi (800 sayfası) ile TD
+#   karşılaştırılır; eksik atlara işaretli tek satır eklenir -> sitede
+#   "son 6 ayda ilk-4 derecesi bulunmuyor" diye görünür. At kaybolmaz.
+# ---------------------------------------------------------------------------
+if "Sayfa1" in out and "Sayfa2" in out:
+    def _norm(s):
+        return re.sub(r"\s+", " ", str(s or "").strip()).upper()
+    # 1) ASIL kaynak: ham program listesi (workbook'taki 'Sayfa2' sayfası:
+    #    Kosu_No / At_No / At_Adi_Temiz / Kosu_Basligi) -> koşu başlığına göre eşlenir.
+    program = {}   # norm(başlık) -> [(at_no, at_adi), ...]
+    try:
+        if "Sayfa2" in wb.sheetnames:
+            wsp = wb["Sayfa2"]
+            hp = [str(c.value or "").strip() for c in wsp[1]]
+            if "At_Adi_Temiz" in hp and "Kosu_Basligi" in hp:
+                iN, iA, iB = hp.index("At_No"), hp.index("At_Adi_Temiz"), hp.index("Kosu_Basligi")
+                for row in wsp.iter_rows(min_row=2, values_only=True):
+                    at = str(row[iA] or "").strip().upper()
+                    no = str(row[iN] or "").strip()
+                    bas = _norm(row[iB])
+                    if at and bas:
+                        L = program.setdefault(bas, [])
+                        if (no, at) not in L:
+                            L.append((no, at))
+    except Exception as _e:
+        print(f"  NOT: ham program listesi okunamadı ({_e}); 800 listesi kullanılacak")
+    _eklenen = 0
+    for b1 in out["Sayfa1"]:
+        il = b1["header"].get("İl", ""); kosu = b1["header"].get("Koşu No", "")
+        # asıl liste: program (başlıkla); yoksa 800 sayfası (yedek)
+        liste = program.get(_norm(b1.get("title", "")))
+        if not liste:
+            b2 = next((b for b in out["Sayfa2"]
+                       if b["header"].get("İl") == il and str(b["header"].get("Koşu No")) == str(kosu)), None)
+            liste = []
+            if b2:
+                g = set()
+                for r in b2["detay"]:
+                    at = str(r[1]).strip().upper(); no = str(r[0]).strip()
+                    if at and at not in g:
+                        g.add(at); liste.append((no, at))
+        var_olan = {re.sub(r"\d+$", "", str(r[1]).strip().upper()).strip() for r in b1["detay"]}
+        for no, at in liste:
+            if at and at not in var_olan:
+                yeni = [""] * 42
+                yeni[0] = no; yeni[1] = at; yeni[41] = "GECMIS_YOK"
+                b1["detay"].append(yeni)
+                var_olan.add(at)
+                _eklenen += 1
+    if _eklenen:
+        print(f"Kayıp at koruması: {_eklenen} at TD'ye 'derecesi yok' satırıyla eklendi")
+
+# ---------------------------------------------------------------------------
 # SON 800 DOMİNANS HİZALAMA (BAY OLOF vakası):
 #   Pipeline 800 sayfasında dominans satır kaymasıyla YANLIŞ gelebiliyor
 #   (koşu anahtarı tutmayınca bir üst satırın değerine düşüyor).
@@ -245,39 +300,88 @@ def _d(s):
 
 
 hedef = _hedef_tarih()
-son_kosu = {}   # (il, kosu, at) -> {"atno":..., "son": date}
-tum = []
-for rol, ad_i, tar_i, sufix in (("Sayfa2", 1, 2, False), ("Sayfa1", 1, 8, True)):
-    for b in out.get(rol, []):
-        il = b["header"].get("İl", ""); kosu = b["header"].get("Koşu No", "")
-        for r in b["detay"]:
-            at = str(r[ad_i]).strip()
-            if sufix:
-                at = re.sub(r"\d+$", "", at).strip()   # 'IRON LION1' -> 'IRON LION'
-            t = _d(r[tar_i])
-            if not at or t is None:
-                continue
-            tum.append(t)
-            k = (il, kosu, at.upper())
-            if k not in son_kosu or t > son_kosu[k]["son"]:
-                son_kosu[k] = {"atno": str(r[0]).strip(), "son": t}
-if hedef is None and tum:
-    hedef = max(tum) + datetime.timedelta(days=1)
 
+# -------- YENİ YÖNTEM: TJK'nın RESMİ 'KGS' kolonu (koşmadığı gün sayısı) --------
+# Eski yöntem tablolardaki son koşu tarihinden hesaplıyordu; tablolar filtreli
+# (ilk-4 / 375 gün) olduğundan gerçek son koşu kaçıyor, gün sayısı ŞİŞİYORDU
+# (350g görünen at gerçekte 20g önce koşmuş olabiliyordu). KGS resmî ve kesindir.
 extrem = []
-if hedef:
-    for (il, kosu, at), v in son_kosu.items():
-        gun = (hedef - v["son"]).days
-        if gun <= SIK_GUN:
-            extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
-                           "gun": gun, "tip": "sik"})
-        elif gun >= UZUN_GUN:
-            extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
-                           "gun": gun, "tip": "uzun"})
+_kgs_ok = False
+try:
+    if "Sayfa2" in wb.sheetnames:
+        wsp = wb["Sayfa2"]
+        hp = [str(c.value or "").strip() for c in wsp[1]]
+        if "KGS" in hp and "At_Adi_Temiz" in hp and "Kosu_Basligi" in hp:
+            iN, iA, iK, iB = (hp.index("At_No"), hp.index("At_Adi_Temiz"),
+                              hp.index("KGS"), hp.index("Kosu_Basligi"))
+            def _norm2(s):
+                return re.sub(r"\s+", " ", str(s or "").strip()).upper()
+            baslik_il = {}
+            for b in out.get("Sayfa1", []):
+                baslik_il[_norm2(b.get("title", ""))] = (b["header"].get("İl", ""),
+                                                         b["header"].get("Koşu No", ""))
+            gorulen = set()
+            for row in wsp.iter_rows(min_row=2, values_only=True):
+                at = str(row[iA] or "").strip().upper()
+                bas = _norm2(row[iB])
+                if not at or bas not in baslik_il or (bas, at) in gorulen:
+                    continue
+                gorulen.add((bas, at))
+                try:
+                    gun = int(float(str(row[iK]).replace(",", ".")))
+                except Exception:
+                    continue                       # KGS boş (ilk koşusu) -> extrem'e girmez
+                il, kosu = baslik_il[bas]
+                if gun <= SIK_GUN:
+                    extrem.append({"il": il, "kosu": kosu, "atno": str(row[iN] or "").strip(),
+                                   "at": at, "gun": gun, "tip": "sik"})
+                elif gun >= UZUN_GUN:
+                    extrem.append({"il": il, "kosu": kosu, "atno": str(row[iN] or "").strip(),
+                                   "at": at, "gun": gun, "tip": "uzun"})
+            _kgs_ok = True
+            print("Extremler: resmi KGS kolonundan hesaplandı")
+except Exception as _e:
+    print(f"  NOT: KGS okunamadı ({_e}); eski tarih yöntemine dönülüyor")
+
+if not _kgs_ok:
+    son_kosu = {}   # (il, kosu, at) -> {"atno":..., "son": date}
+    tum = []
+    for rol, ad_i, tar_i, sufix in (("Sayfa2", 1, 2, False), ("Sayfa1", 1, 8, True)):
+        for b in out.get(rol, []):
+            il = b["header"].get("İl", ""); kosu = b["header"].get("Koşu No", "")
+            for r in b["detay"]:
+                at = str(r[ad_i]).strip()
+                if sufix:
+                    at = re.sub(r"\d+$", "", at).strip()
+                t = _d(r[tar_i])
+                if not at or t is None:
+                    continue
+                tum.append(t)
+                k = (il, kosu, at.upper())
+                if k not in son_kosu or t > son_kosu[k]["son"]:
+                    son_kosu[k] = {"atno": str(r[0]).strip(), "son": t}
+    if hedef is None and tum:
+        hedef = max(tum) + datetime.timedelta(days=1)
+    if hedef:
+        for (il, kosu, at), v in son_kosu.items():
+            gun = (hedef - v["son"]).days
+            if gun <= SIK_GUN:
+                extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
+                               "gun": gun, "tip": "sik"})
+            elif gun >= UZUN_GUN:
+                extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
+                               "gun": gun, "tip": "uzun"})
 extrem.sort(key=lambda x: (x["il"], x["tip"], -x["gun"]))
 out["extremler"] = {"hedef": hedef.strftime("%d.%m.%Y") if hedef else "",
                     "sik_gun": SIK_GUN, "uzun_gun": UZUN_GUN, "liste": extrem}
 print(f"Extremler: {len(extrem)} at (sık<= {SIK_GUN}g, uzun>= {UZUN_GUN}g) | hedef: {out['extremler']['hedef']}")
+
+# Şehir -> TJK program linki (AGF düğmesi il-duyarlı açılır) — varsa göm
+try:
+    out["sehir_link"] = json.load(open("sehir_link.json", encoding="utf-8"))
+    print(f"Şehir linkleri: {len(out['sehir_link'])} il gömüldü")
+except Exception:
+    out["sehir_link"] = {}
 
 # Geç çıkış raporu (gec_cikis_rapor.py üretir) — varsa siteye göm
 try:

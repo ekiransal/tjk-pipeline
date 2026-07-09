@@ -456,6 +456,15 @@ def bugunku_programi_cek():
         print("Bulunan şehirler:", list(sehir_link.keys()))
         if not sehir_link:
             print("UYARI: Türkiye şehri bulunamadı. Bugün Türkiye yarışı olmayabilir.")
+        # WEB: AGF düğmesi il-duyarlı açılsın diye şehir->TJK link haritasını kaydet
+        try:
+            import json as _json
+            if os.path.isdir("web"):
+                _json.dump(sehir_link, open(os.path.join("web", "sehir_link.json"), "w",
+                                            encoding="utf-8"), ensure_ascii=False)
+                print(f"      web/sehir_link.json yazıldı ({len(sehir_link)} şehir)")
+        except Exception as _e:
+            print(f"      NOT: sehir_link.json yazılamadı: {_e}")
 
         for sehir, url in sehir_link.items():
             print(f"\n--- {sehir} ---")

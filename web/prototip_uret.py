@@ -70,9 +70,7 @@ HTML = r"""<!DOCTYPE html>
   /* DOMİNANS GRUPLARI: 50 / 66 / 75 ayrı tonlar + grup başı kalın çizgi */
   .detay th.g50,.detay th.g66,.detay th.g75{width:46px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
   .detay th.dar{width:40px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
-  .detay th.g50,.detay td.g50{background:#e7f3ec !important}
-  .detay th.g66,.detay td.g66{background:#e9effa !important}
-  .detay th.g75,.detay td.g75{background:#f2ecfa !important}
+
   
   /* GALOP GRUP KUTULARI: kendi içinde bütün, birbirinden keskin ayrım */
   .grup30{background:#edf6f2;border:1.5px solid #9fc4b4;border-radius:12px;padding:7px}
@@ -226,8 +224,7 @@ HTML = r"""<!DOCTYPE html>
   .detay td.sonno{font-weight:800;background:var(--pri2)}
   .detay td.kfiyi{color:#1a7f4b;font-weight:700}
   .detay td.kfkotu{color:#c23a3a;font-weight:700}
-  .detay td.dom.poz{color:#1a7f4b;font-weight:700}
-  .detay td.dom.neg{color:#c23a3a;font-weight:700}
+  .detay td.dom{font-weight:700}
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:1;min-width:0}
@@ -307,8 +304,10 @@ function ciz(){
   document.querySelectorAll(".tab").forEach(t=>{
     t.classList.toggle("on",t.dataset.t===secTab);
     t.onclick=()=>{
-      if(t.dataset.t==="AGF"){   // AGF: TJK günlük program (AGF tabloları) yeni sekmede
-        window.open("https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami","_blank");
+      if(t.dataset.t==="AGF"){   // AGF: TJK programı SEÇİLİ İLLE yeni sekmede
+        const u=(DATA.sehir_link||{})[secIl]
+              || "https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami";
+        window.open(u,"_blank");
         return;
       }
       secTab=t.dataset.t; ciz();
@@ -380,8 +379,12 @@ function tabloHTML(t, zemin){
   const ORJ_AD={"Kalite":"Babanın Yavruları: Elit Kazanç","Mesafe":"Babanın Yavruları: "+mesafeAd,
                 "Sprinter":"Babanın Yavruları: Sprintle Kazanç","Kaçak":"Babanın Yavruları: Kaçarak Kazanç",
                 "Dede Kalite":"Dedenin Yavruları: Elit Kazanç","Dede Mesafe":"Dedenin Yavruları: "+mesafeAd};
+  // Sayı başlığı tabloya özel AÇIKLAMALI (mutfak eşiği ifşa edilmeden)
+  const SAYI_AD={"Kalite":"Elit Kazanma / Toplam Kazanma","Mesafe":"Bu Mesafede / Toplam Kazanma",
+                 "Sprinter":"Sprintle / Toplam Kazanma","Kaçak":"Kaçarak / Toplam Kazanma",
+                 "Dede Kalite":"Elit Kazanma / Toplam Kazanma","Dede Mesafe":"Bu Mesafede / Toplam Kazanma"};
   return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${ORJ_AD[t.name]||t.name}</h4>
-    <table><tr><th>No</th><th>Değer</th><th>Sayı</th></tr>${rows}</table></div>`;
+    <table><tr><th>At No</th><th>Değer</th><th>${SAYI_AD[t.name]||"Sayı"}</th></tr>${rows}</table></div>`;
 }
 
 // MOBİLDE GİZLENEN ikincil kolonlar (telefonda sade görünüm; 'tüm kolonlar' ile açılır)
@@ -428,6 +431,7 @@ function detayHTML(b, tab){
   const sil=new Set((SIL[tab]||[]).map(x=>x-1));
   const domk=new Set((DOMK[tab]||[]).map(x=>x-1));
   const domList=(DOMK[tab]||[]).map(x=>x-1);
+  const domKilo=new Set(domList.filter((_,i)=>i%2===1));   // kilo dominansı gizli: 2x'i HP'ye katılır
   const domGrp=c=>{const i=domList.indexOf(c);return i<0?"":(i<2?"g50":(i<4?"g66":"g75"));};
   const domBas=c=>{const i=domList.indexOf(c);return (i===0||i===2||i===4)?" gbas":"";};
   const sonhp=new Set((SONHP[tab]||[]).map(x=>x-1));
@@ -435,7 +439,7 @@ function detayHTML(b, tab){
   const [seyA,seyB]=(SEYIR[tab]||[0,0]).map(x=>x-1);
   const dolu=[];
   for(let c=0;c<42;c++){
-    if(sil.has(c)||c===seyB) continue;
+    if(sil.has(c)||c===seyB||domKilo.has(c)) continue;
     if(rows.some(r=>String(r[c]??"").trim()!=="") || c===seyA || (tab==="Sayfa2"&&c===18)) dolu.push(c);   // S8: Kaçıncı sentetik
   }
   // Handikap ile İlk 3 HP yer değiştirir (Handikap önce)
@@ -470,7 +474,9 @@ function detayHTML(b, tab){
       ${secenekler.map(([v,ad])=>`<label><input type="radio" name="f_${tur}_${tab}_${c}" class="fr" value="${v}"${v===""?" checked":""} onchange="${fn||"fUygula"}(this)"> ${ad}</label>`).join("")}
     </div>`;
   const th=dolu.map(c=>{
-    const ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
+    let ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
+    if(domk.has(c)){ const g0=domGrp(c);
+      ad=g0==="g50"?"Genel HP/KG Avantajı":(g0==="g66"?"Orta HP/KG Avantajı":"İnce HP/KG Avantajı"); }
     let f="";
     if(c===FK.no||c===FK.sehir||c===FK.msf||c===FK.zemin) f=kutuPanel(c);
     else if(c===FK.tarih&&tab==="Sayfa1") f=secimPanel(c,"trh",[["60","Son 2 Ay"],["","Tümü"]]);
@@ -487,6 +493,14 @@ function detayHTML(b, tab){
   const KCIN = tab==="Sayfa1" ? 5 : 11;   // satırın koşu cinsi kolonu (0-tabanlı)
   let _oncekiAt="";
   const trs=rows.map(r=>{
+    // KAYIP AT: geçmişi olmayan at tek satırla gösterilir (görünmez olmaz)
+    if(String(r[41]||"")==="GECMIS_YOK"){
+      _oncekiAt=String(r[1]??"").trim().toUpperCase();
+      return `<tr class="grupbas gecmisyok"><td class="num" data-c="0" data-v="${esc(r[0])}">${esc(r[0])}</td>`+
+        `<td class="atadi" data-c="1" data-v="${esc(r[1])}">${esc(r[1])}</td>`+
+        `<td colspan="${dolu.length-2}" style="text-align:left;color:#8a93a5;font-style:italic;padding-left:10px">`+
+        `son 6 ayda ilk-4 derecesi bulunmuyor</td></tr>`;
+    }
     const kcinsUp=String(r[KCIN]??"").trim().toUpperCase().replace(/\s+/g," ");
     const domGizle=DOM_YOK.has(kcinsUp)||kcinsUp.startsWith("MAIDEN");   // Maiden (+/Dişi) dominans YOK
     const atBase=String(r[1]??"").trim().toUpperCase().replace(/\d+$/,"").trim();
@@ -496,7 +510,7 @@ function detayHTML(b, tab){
     let cls="";
     if(c===1){ cls="atadi"; v=v.replace(/\d+$/,"").trim(); }   // TESCİL1 -> TESCİL
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
-    else if(c===FK.tarih){ v=tarihGoster(v); cls="num"; }                // tarih dd.mm.yyyy (yıl dahil)
+    else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc"; }            // tarih: Derece gibi KOYU
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
     else if(c===FK.kf){                     // Kilo Farkı: EKSİ=avantaj(yeşil), ARTI=dezavantaj(kırmızı)
       const fk=parseFloat(v.replace(",","."));
@@ -509,12 +523,14 @@ function detayHTML(b, tab){
       const p=v.split("-").filter(x=>x.trim()!=="");
       v=p.length?p[p.length-1]:v; cls="num";
     }
-    else if(domk.has(c)){                                                // dominans grupları renkli
-      if(domGizle){ v=""; cls="num dom "+domGrp(c); }                     // Şartlı 1 / Şartlı 19 -> dominans YAZILMAZ
+    else if(domk.has(c)){                       // BİRLEŞİK AVANTAJ: HP + 2 x Kilo (tek sayı, RENKSİZ)
+      if(domGizle){ v=""; cls="num dom"; }       // Maiden / Şartlı 1 / Şartlı 19 -> yazılmaz
       else{
-        const f2=parseFloat(v.replace(",","."));
-        cls="num dom "+domGrp(c)+domBas(c)+" "+(f2>0?"poz":(f2<0?"neg":""));
-        if(!isNaN(f2)){ const yv=Math.round(f2*100)/100; v=(yv>0?"+":"")+yv; }
+        const hp=parseFloat(v.replace(",","."));
+        const kl=parseFloat(String(r[c+1]??"").replace(",","."));
+        const f2=isNaN(hp)?NaN:(hp + 2*(isNaN(kl)?0:kl));
+        cls="num dom";
+        if(!isNaN(f2)){ const yv=Math.round(f2*100)/100; v=(yv>0?"+":"")+yv; } else v="";
       }
     }
     else if(yascins.has(c)){ v=yasCinsCevir(v); cls="yc"; }
@@ -688,8 +704,10 @@ function gecUyarilar(b, tab){
   for(const at of atlar){
     const v=gec[at];
     if(v && v.problem){
-      const d=v.kosular.filter(k=>k.boy).map(k=>`${k.tarih} (${k.boy})`).join(", ");
-      uyari.push(`<span class="m vurgu"><b>⚠ Geç Çıkış</b>${esc(at)}: ${esc(d)}</span>`);
+      const g=v.kosular.filter(k=>k.boy).map(k=>`${k.tarih} (${k.boy})`).join(", ");
+      const ds=v.kosular.filter(k=>k.dsiz).map(k=>k.tarih).join(", ");
+      if(g)  uyari.push(`<span class="m vurgu"><b>⚠ Geç Çıkış</b>${esc(at)}: ${esc(g)}</span>`);
+      if(ds) uyari.push(`<span class="m vurgu"><b>⚠ Derecesiz</b>${esc(at)}: ${esc(ds)}</span>`);
     }
   }
   return uyari.length?`<div class="meta" style="margin-top:8px">${uyari.join("")}</div>`:"";
@@ -770,8 +788,16 @@ function kartHTML(b){
   const h=b.header;
   const meta=["Mesafe","Zemin","Irk"].filter(k=>h[k])
     .map(k=>`<span class="m"><b>${k}</b>${esc(h[k])}</span>`).join("");
-  const yorum=h["Yorum"]?`<span class="m vurgu"><b>Yorum</b>${esc(h["Yorum"])}</span>`:"";
-  const final=h["Final"]?`<span class="m vurgu"><b>Final</b>${esc(Number(h["Final"])?Number(h["Final"]).toFixed(2):h["Final"])}</span>`:"";
+  // Yorum: teknik terim -> müşteri dili
+  const YORUM_TR={"SPRINTER":"sonu kuvvetli","STALKER":"toplam derecesi iyi",
+                  "KAÇAK":"önlerde gitmeyi seven","KACAK":"önlerde gitmeyi seven"};
+  const yorumCvr=String(h["Yorum"]||"").split("/").map(x=>{
+    const k=x.trim().toUpperCase(); return YORUM_TR[k]||x.trim();}).filter(Boolean).join(" veya ");
+  const yorum=yorumCvr?`<span class="m vurgu"><b>Yorum</b>${esc(yorumCvr)}</span>`:"";
+  // Final: ham sayı yerine KADEME kelimesi (mutfak değeri ifşa edilmez)
+  const _fv=Math.abs(parseFloat(String(h["Final"]||"").replace(",",".")));
+  const _fk=isNaN(_fv)?"":(_fv<3?"nötr":_fv<10?"zayıf":_fv<20?"orta":_fv<35?"kuvvetli":"çok kuvvetli");
+  const final=(h["Final"]&&_fk)?`<span class="m vurgu"><b>Kuvvet</b>${_fk}</span>`:"";
   const gNorm=b.galops.filter(g=>!g.son), gSon=b.galops.filter(g=>g.son);
   const pnl=(g)=>`<div class="panel${g.son?" sonp":""}"><h4>${esc(String(g.name).replace(/\s*\+\s*400/g,""))}</h4>
       ${g.rows.length?g.rows.map(galopSatir).join(""):'<div class="bos">kayıt yok</div>'}</div>`;
@@ -788,10 +814,6 @@ function kartHTML(b){
     </div>
     ${gecUyarilar(b, "Sayfa1")}
 
-    <div class="bol-baslik">Orijin Analizi</div>
-    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavrularının başarıları</div>
-    <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
-
     <div class="bol-baslik">Galoplar</div>
     <div class="galoprow">
       <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
@@ -801,11 +823,15 @@ function kartHTML(b){
     </div>
 
     <div class="bol-baslik">Toplam Derece — Detay</div>
-    <div class="tablonot ustte">Not: At yarışı genel hükümleri 7. md. uyarınca her 1 handikap puanı artışında sıklet ½ kg arttırılır. Tablodaki Kilo Avantajı değerlerini 2 ile çarparak yanındaki HP Avantajı değeriyle kıyaslayabilir; atın derece sıralamasında ne kadar öne çıkabileceğini ya da geride kalabileceğini kolayca hesaplayabilirsiniz. Tablo genelinde yeşil değerler avantajı, kırmızı değerler dezavantajı gösterir; Kilo Farkı'nda daha az kilo taşımak avantaj olduğundan eksi (−) değerler yeşildir.</div>
+    <div class="tablonot ustte">Not: Avantaj sütunları handikap puanı cinsindendir; sıklet farkları genel hükümler (7. md., ½ kg = 1 puan) uyarınca hesaba katılmıştır. Artı (+) değer atın öne çıkabileceğini, eksi (−) değer geride kalabileceğini gösterir. Kilo Farkı'nda daha az kilo taşımak avantaj olduğundan eksi (−) değerler yeşildir.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
       return b8?`<div class="bol-baslik">Son 800 — Detay</div>${detayHTML(b8,"Sayfa2")}`:"";})()}
+
+    <div class="bol-baslik">Orijin Analizi</div>
+    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavrularının başarıları</div>
+    <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
 }
 
