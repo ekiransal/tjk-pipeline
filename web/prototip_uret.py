@@ -166,6 +166,13 @@ HTML = r"""<!DOCTYPE html>
   .bol-baslik::after{content:"";flex:1;height:1px;background:var(--line)}
   /* Detay bölüm başlıkları koşu başlığı gibi: kalın, büyük, koyu — tablo kime ait belli olsun */
   .bol-baslik.buyuk{font-size:16.5px;font-weight:800;color:var(--txt);text-transform:none;letter-spacing:.2px}
+  /* BAŞLIK ÇİPLERİ: galopa zıpla + AGF kısayolları */
+  .bol-baslik .atlama{font-size:11px;font-weight:700;color:var(--mut);background:var(--card);
+    border:1px solid var(--line);border-radius:14px;padding:3px 11px;cursor:pointer;
+    white-space:nowrap;letter-spacing:.2px;flex:0 0 auto}
+  .bol-baslik .atlama:hover{color:var(--txt);border-color:#b9c2d0}
+  .bol-baslik .atlama.agfc{color:#1a7f4b;background:#eaf6ee;border-color:#bfe3cc}
+  .bol-baslik .atlama.agfc:hover{color:#116338}
   /* GALOP PANELLERİ */
   .paneller{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
   /* TEK HİZA: galop panelleri alta sarkmasın; sığmazsa yatay kaydırılır */
@@ -240,6 +247,9 @@ HTML = r"""<!DOCTYPE html>
   .detay td.dom.poz{color:#1a7f4b}
   .detay td.dom.neg{color:#c23a3a}
   .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
+  /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at */
+  .chip.bitti:not(.on){background:#eaf6ee;border-color:#bfe3cc;color:#1a7f4b}
+  .detay td.kazanan{color:#1a7f4b !important;font-weight:800}
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:1;min-width:0}
@@ -284,6 +294,7 @@ HTML = r"""<!DOCTYPE html>
       <div class="tabs" id="tabs">
         <button class="tab on" data-t="Sayfa1">Analiz</button>
         <button class="tab" data-t="AGF">AGF</button>
+        <button class="tab" data-t="AGF2" style="display:none">2. AGF</button>
       </div>
     </div>
     <div id="yan"></div>
@@ -315,20 +326,25 @@ function ciz(){
   for(const no of kosular(secIl)){
     const b=document.createElement("button");
     b.className="chip num"+(no===secKosu?" on":""); b.textContent=no;
+    // BİTEN KOŞU: koşu çipine ✓ (sonuclar.json'dan, tarih eşleşiyorsa)
+    const _sn=(typeof sonucGecerli==="function"&&sonucGecerli())?(((SONUC.iller||{})[secIl]||{})[String(no)]):null;
+    if(_sn&&_sn.kazanan!=null){ b.classList.add("bitti"); b.textContent=no+" ✓"; }
     b.onclick=()=>{secKosu=no; derF={sehir:"",msf:"",ay:""}; ciz();};
     koBox.appendChild(b);
+  }
+  // AGF düğmeleri: 8+ koşulu günde "1. AGF" + "2. AGF", az koşulu günde tek "AGF"
+  {
+    const N=kosular(secIl).length;
+    const b1=document.querySelector('.tab[data-t="AGF"]');
+    const b2=document.querySelector('.tab[data-t="AGF2"]');
+    if(b1) b1.textContent=(N>=8)?"1. AGF":"AGF";
+    if(b2) b2.style.display=(N>=8)?"":"none";
   }
   document.querySelectorAll(".tab").forEach(t=>{
     t.classList.toggle("on",t.dataset.t===secTab);
     t.onclick=()=>{
-      if(t.dataset.t==="AGF"){   // AGF: TJK programı SEÇİLİ İLLE yeni sekmede
-        const SL=DATA.sehir_link||{};
-        const gecerli=x=>(typeof x==="string"&&/^https?:\/\//i.test(x))?x:"";   // "javascript: void(0)" gibi sahte linkler ELENİR
-        const ham=gecerli(SL.agf&&SL.agf[secIl])||gecerli(SL.program&&SL.program[secIl])||gecerli(SL[secIl])||"";
-        // Info/Sehir = süssüz iç parça -> Info/Page = tam görünümlü sayfa (şehir sekmesi seçili)
-        const u=ham?ham.replace(/\/Info\/Sehir\//i,"/Info/Page/")
-                    :"https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami";
-        window.open(u,"_blank");
+      if(t.dataset.t==="AGF"||t.dataset.t==="AGF2"){   // AGF: TJK AGF tablosu yeni sekmede
+        agfAc(t.dataset.t==="AGF2");
         return;
       }
       secTab=t.dataset.t; ciz();
@@ -366,8 +382,8 @@ function ciz(){
       <span>${esc(e.at)}</span><span class="gun">${esc(e.det)}</span></div>`;
     yan.innerHTML=`<div class="kart extrem"><h3>⚠️ Dikkat — ${esc(secKosu)}. Koşu
       <span style="color:var(--mut);font-weight:600;font-size:11px">${esc(DATA.extremler.hedef||"")}</span></h3>
-      ${sik.length?`<div class="grup">Sık koşan (≤${DATA.extremler.sik_gun} gün)</div>${sik.map(sat).join("")}`:""}
-      ${uzun.length?`<div class="grup">Uzun ara (≥${DATA.extremler.uzun_gun} gün)</div>${uzun.map(sat).join("")}`:""}
+      ${sik.length?`<div class="grup">Sık koşan</div>${sik.map(sat).join("")}`:""}
+      ${uzun.length?`<div class="grup">Uzun ara</div>${uzun.map(sat).join("")}`:""}
       ${gecler.some(e=>e.tip==="gec")?`<div class="grup">⚠ Geç çıkış</div>${gecler.filter(e=>e.tip==="gec").map(gsat).join("")}`:""}
       ${gecler.some(e=>e.tip==="dsiz")?`<div class="grup">⚠ Derecesiz</div>${gecler.filter(e=>e.tip==="dsiz").map(gsat).join("")}`:""}
       ${(!sik.length&&!uzun.length&&!gecler.length)?'<div class="bos">bu koşuda dikkat gerektiren at yok</div>':""}
@@ -478,6 +494,10 @@ function fmt(v){
 }
 function detayHTML(b, tab){
   const rows=b.detay||[];
+  // KAZANAN: koşu bittiyse kazanan at no (✓ işareti için)
+  const _snk=(typeof sonucGecerli==="function"&&sonucGecerli())
+    ?(((SONUC.iller||{})[b.header["İl"]]||{})[String(b.header["Koşu No"])]):null;
+  const kazananNo=(_snk&&_snk.kazanan!=null)?String(_snk.kazanan):null;
   if(!rows.length) return '<div class="bos" style="padding:12px">Bu koşunun atlarının geçmiş koşu kaydı yok — ilk kez koşacak taylar (örn. 2 yaşlılar) olabilir.</div>';
   const basliklar = tab==="Sayfa1"? BASLIK_TD : BASLIK_S8;
   const sil=new Set((SIL[tab]||[]).map(x=>x-1));
@@ -579,8 +599,9 @@ function detayHTML(b, tab){
     return `<tr${grupBas?' class="grupbas"':''}>`+dolu.map(c=>{
     let v=String(r[c]??"").trim();
     let cls="";
-    if(c===1){ cls="atadi"; v=v.replace(/\d+$/,"").trim(); }   // TESCİL1 -> TESCİL
-    else if(c===FK.no){ cls="num drc"; }                                 // At No: Derece gibi KOYU
+    const _kzn=(kazananNo&&String(r[0]??"").trim()===kazananNo);   // bu at koşuyu KAZANDI
+    if(c===1){ cls="atadi"+(_kzn?" kazanan":""); v=v.replace(/\d+$/,"").trim(); if(_kzn&&grupBas) v="✓ "+v; }   // TESCİL1 -> TESCİL
+    else if(c===FK.no){ cls="num drc"+(_kzn?" kazanan":""); }            // At No: Derece gibi KOYU
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
     else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc"; }            // tarih: Derece gibi KOYU
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
@@ -837,6 +858,22 @@ function derecelerBolum(){
   return `<div class="bol-baslik">Dereceler</div>${filtreler}${gruplar}`;
 }
 
+// AGF TABLOSU AÇ: ikinci=true -> 2. altılı. Gerçek link yoksa şehir program sayfasına düşer.
+function agfAc(ikinci){
+  const SL=DATA.sehir_link||{};
+  const gecerli=x=>(typeof x==="string"&&/^https?:\/\//i.test(x))?x:"";   // "javascript: void(0)" gibi sahte linkler ELENİR
+  const agfU=gecerli(((ikinci?SL.agf2:SL.agf1)||{})[secIl]);
+  const ham=agfU||gecerli(SL.agf&&SL.agf[secIl])||gecerli(SL.program&&SL.program[secIl])||gecerli(SL[secIl])||"";
+  // Info/Sehir = süssüz iç parça -> Info/Page = tam görünümlü sayfa (şehir sekmesi seçili)
+  const u=ham?ham.replace(/\/Info\/Sehir\//i,"/Info/Page/")
+              :"https://www.tjk.org/TR/YarisSever/Info/Page/GunlukYarisProgrami";
+  window.open(u,"_blank");
+}
+function galopaGit(){
+  const g=document.getElementById("galopbas");
+  if(g) g.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
 function kartHTML(b){
   const h=b.header;
   const kosuCinsi=String(b.title||"").replace(/^\d+\.\s*Koşu\s*/,"").split(",")[0].trim();
@@ -867,6 +904,11 @@ function kartHTML(b){
   const setA=b.tables.filter(t=>t.col<16);
   const setDede=b.tables.filter(t=>t.col>=16)
                  .map(t=>({...t,name:"Dede "+t.name}));
+  // BAŞLIK ÇİPLERİ: galopa zıpla + AGF aç (8+ koşulu günde iki altılı)
+  const _N=kosular(secIl).length;
+  const cipler=`<span class="atlama" onclick="galopaGit()">⬆ Galoplar</span>`+
+    `<span class="atlama agfc" onclick="agfAc(false)">${_N>=8?"1. AGF":"AGF"}</span>`+
+    (_N>=8?`<span class="atlama agfc" onclick="agfAc(true)">2. AGF</span>`:"");
   return `
   <div class="kart">
     <div class="kosu-baslik-satir">
@@ -879,7 +921,7 @@ function kartHTML(b){
       ${meta}${yorum}${final}
     </div>
 
-    <div class="bol-baslik buyuk">Galoplar</div>
+    <div class="bol-baslik buyuk" id="galopbas">Galoplar</div>
     <div class="galoprow">
       <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
         <div class="paneller tekhiza">${gNorm.map(pnl).join("")||'<div class="bos">galop verisi yok</div>'}</div></div>
@@ -892,11 +934,11 @@ function kartHTML(b){
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
-      return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuOzet}</div>
+      return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuOzet}${cipler}</div>
     <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
-    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}</div>
+    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}${cipler}</div>
     <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavruları</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
@@ -905,6 +947,20 @@ function kartHTML(b){
 if(DATA.uretim){const _u=document.getElementById("uretimNot");
   if(_u) _u.textContent="  ·  veri: "+DATA.uretim;}
 secIl=iller()[0]; secKosu=kosular(secIl)[0];
+// SONUÇLAR: sunucu yarım saatte bir sonuclar.json günceller; sayfa 10 dk'da bir okur.
+// Tarih eşleşmezse (dünün sonucu / yarının programı) işaret BASILMAZ.
+let SONUC={}, _sonucStr="";
+function sonucGecerli(){ return SONUC && SONUC.tarih && DATA.extremler && SONUC.tarih===DATA.extremler.hedef; }
+function sonucYukle(){
+  try{
+    fetch("sonuclar.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{
+      if(!d) return;
+      const s=JSON.stringify(d);
+      if(s!==_sonucStr){ _sonucStr=s; SONUC=d; ciz(); }
+    }).catch(()=>{});
+  }catch(e){}
+}
+sonucYukle(); setInterval(sonucYukle, 10*60*1000);
 ciz();
 </script>
 </body>

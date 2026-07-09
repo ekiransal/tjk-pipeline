@@ -456,13 +456,27 @@ def bugunku_programi_cek():
         print("Bulunan şehirler:", list(sehir_link.keys()))
         if not sehir_link:
             print("UYARI: Türkiye şehri bulunamadı. Bugün Türkiye yarışı olmayabilir.")
-        # WEB: AGF düğmesi il-duyarlı açılsın diye şehir->TJK link haritasını kaydet
+        # WEB: AGF düğmesi il-duyarlı açılsın diye şehir->TJK link haritasını kaydet.
+        # AGF popup kalıbı (Selenium ile tespit edildi):
+        #   https://www.tjk.org/AGFv2/{SehirId}/{GGAAYYYY}/TR/{altiliNo}/1
         try:
             import json as _json
+            _agf1, _agf2 = {}, {}
+            try:
+                _tk = str(hedef_tarih).replace("/", "").replace(".", "")   # GG/AA/YYYY -> GGAAYYYY
+                for _s, _u in sehir_link.items():
+                    _m = re.search(r"SehirId=(\d+)", _u)
+                    if _m and len(_tk) == 8:
+                        _sid = _m.group(1)
+                        _agf1[_s] = f"https://www.tjk.org/AGFv2/{_sid}/{_tk}/TR/1/1"
+                        _agf2[_s] = f"https://www.tjk.org/AGFv2/{_sid}/{_tk}/TR/2/1"
+            except Exception as _e2:
+                print(f"      NOT: AGF linkleri üretilemedi: {_e2}")
             if os.path.isdir("web"):
-                _json.dump(sehir_link, open(os.path.join("web", "sehir_link.json"), "w",
-                                            encoding="utf-8"), ensure_ascii=False)
-                print(f"      web/sehir_link.json yazıldı ({len(sehir_link)} şehir)")
+                _json.dump({"program": sehir_link, "agf1": _agf1, "agf2": _agf2},
+                           open(os.path.join("web", "sehir_link.json"), "w",
+                                encoding="utf-8"), ensure_ascii=False)
+                print(f"      web/sehir_link.json yazıldı ({len(sehir_link)} şehir, AGF linkli)")
         except Exception as _e:
             print(f"      NOT: sehir_link.json yazılamadı: {_e}")
 
@@ -669,7 +683,7 @@ def _orjin_full_uret(sayfa1_rows, gen, mode):
     return _grid_to_rows(Gp)
 
 
-def yapilacak_yer_uret(yeniyer_rows, sayfa1_rows, sehir=None, refs4=None, yon4=None):
+def yapilacak_yer_uret(yeniyer_rows, sayfa1_rows, sehir=None, refs4=None, yon4=None, tek_il=False):
     """yeni yer (=ana) -> yapılacak yer grid'i (G dict).
     sehir verilirse orjin/dede o ile göre üretilir (çok-illi gün için)."""
     ana_rows = [list(YY.YENI_YER_BASLIK)] + [list(r) for r in yeniyer_rows]
@@ -702,10 +716,10 @@ def yapilacak_yer_uret(yeniyer_rows, sayfa1_rows, sehir=None, refs4=None, yon4=N
 
     galop = _oku_sayfa(YY_GALOP)
     if galop:
-        YYZ.galop_yerlestir(G, galop, sehir=sehir)
+        YYZ.galop_yerlestir(G, galop, sehir=sehir, tek_il=tek_il)
     songalop = _oku_sayfa(YY_SONGALOP)
     if songalop:
-        YYZ.songalop_yerlestir(G, songalop, sehir=sehir)
+        YYZ.songalop_yerlestir(G, songalop, sehir=sehir, tek_il=tek_il)
     return G
 
 
@@ -1032,15 +1046,16 @@ def main():
         yeniyer_all.extend(yeniyer_city)
         if YAPILACAK_YER:
             # orjin/dede panelleri yapılacak yer İÇİNE yerleştirilir (refs4/yon4 ile)
+            _tek_il = (len(il_listesi) == 1)   # tek şehir yarışıyorsa galop fallback güvenli
             grid_city = yapilacak_yer_uret(yeniyer_city, sayfa1_city, sehir=sehir,
-                                           refs4=refs4, yon4=yon4)
+                                           refs4=refs4, yon4=yon4, tek_il=_tek_il)
             grids.append((sehir, grid_city))
 
             # 800 DOMİNANS: aynı format, dominans 375 günlük 800 referansından.
             if SEKIZYUZ_DOMINANS and D8 is not None and ref_map_800:
                 yeniyer_800_city = D8.yeni_yer_800_uret(yeniyer_city, ref_map_800)
                 grid_800_city = yapilacak_yer_uret(yeniyer_800_city, sayfa1_city, sehir=sehir,
-                                                   refs4=refs4, yon4=yon4)
+                                                   refs4=refs4, yon4=yon4, tek_il=(len(il_listesi) == 1))
                 grids_800.append((sehir, grid_800_city))
                 # DOMİNANS DÜZELTME (BAY OLOF vakası): harita 800-DÖNÜŞTÜRÜLMÜŞ
                 # satırlardan kurulur (yeniyer_800_city). Böylece eski taraf (Eski

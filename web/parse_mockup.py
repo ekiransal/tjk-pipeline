@@ -276,8 +276,13 @@ if "Sayfa1" in out and "Sayfa2" in out:
 # EXTREMLER: uzun aradan gelen + çok sık koşan atlar (sağ üst kutu için)
 # ---------------------------------------------------------------------------
 import datetime
-SIK_GUN = 5     # son koşusu <= bu kadar gün önce -> "sık koşan"
-UZUN_GUN = 60   # son koşusu >= bu kadar gün önce -> "uzun ara"
+# IRKA GÖRE EŞİKLER (jokey görüşü: İngiliz dinlenmeye muhtaç, yakın koşması dikkat çeker;
+# Arap dayanıklı, sık koşabilir AMA uzun aradan daha çok etkilenir)
+SIK_ARAP,  SIK_ING  = 5, 6      # son koşusu <= bu kadar gün önce -> "sık koşan"
+UZUN_ARAP, UZUN_ING = 45, 75    # son koşusu >= bu kadar gün önce -> "uzun ara"
+def _esik(bas):
+    """Koşu başlığından ırkı bulur, (sık_eşik, uzun_eşik) döndürür. Arap değilse İngiliz varsayılır."""
+    return (SIK_ARAP, UZUN_ARAP) if "ARAP" in str(bas or "").upper() else (SIK_ING, UZUN_ING)
 
 
 def _hedef_tarih():
@@ -332,10 +337,11 @@ try:
                 except Exception:
                     continue                       # KGS boş (ilk koşusu) -> extrem'e girmez
                 il, kosu = baslik_il[bas]
-                if gun <= SIK_GUN:
+                _sik, _uzun = _esik(bas)   # bas = koşu başlığı (ırk bilgisi içinde)
+                if gun <= _sik:
                     extrem.append({"il": il, "kosu": kosu, "atno": str(row[iN] or "").strip(),
                                    "at": at, "gun": gun, "tip": "sik"})
-                elif gun >= UZUN_GUN:
+                elif gun >= _uzun:
                     extrem.append({"il": il, "kosu": kosu, "atno": str(row[iN] or "").strip(),
                                    "at": at, "gun": gun, "tip": "uzun"})
             _kgs_ok = True
@@ -349,6 +355,7 @@ if not _kgs_ok:
     for rol, ad_i, tar_i, sufix in (("Sayfa2", 1, 2, False), ("Sayfa1", 1, 8, True)):
         for b in out.get(rol, []):
             il = b["header"].get("İl", ""); kosu = b["header"].get("Koşu No", "")
+            _bas = b.get("title", "")   # ırk bilgisi başlıkta
             for r in b["detay"]:
                 at = str(r[ad_i]).strip()
                 if sufix:
@@ -359,27 +366,32 @@ if not _kgs_ok:
                 tum.append(t)
                 k = (il, kosu, at.upper())
                 if k not in son_kosu or t > son_kosu[k]["son"]:
-                    son_kosu[k] = {"atno": str(r[0]).strip(), "son": t}
+                    son_kosu[k] = {"atno": str(r[0]).strip(), "son": t, "bas": _bas}
     if hedef is None and tum:
         hedef = max(tum) + datetime.timedelta(days=1)
     if hedef:
         for (il, kosu, at), v in son_kosu.items():
             gun = (hedef - v["son"]).days
-            if gun <= SIK_GUN:
+            _sik, _uzun = _esik(v.get("bas", ""))
+            if gun <= _sik:
                 extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
                                "gun": gun, "tip": "sik"})
-            elif gun >= UZUN_GUN:
+            elif gun >= _uzun:
                 extrem.append({"il": il, "kosu": kosu, "atno": v["atno"], "at": at,
                                "gun": gun, "tip": "uzun"})
 extrem.sort(key=lambda x: (x["il"], x["tip"], -x["gun"]))
 out["extremler"] = {"hedef": hedef.strftime("%d.%m.%Y") if hedef else "",
-                    "sik_gun": SIK_GUN, "uzun_gun": UZUN_GUN, "liste": extrem}
-print(f"Extremler: {len(extrem)} at (sık<= {SIK_GUN}g, uzun>= {UZUN_GUN}g) | hedef: {out['extremler']['hedef']}")
+                    "sik_arap": SIK_ARAP, "sik_ing": SIK_ING,
+                    "uzun_arap": UZUN_ARAP, "uzun_ing": UZUN_ING, "liste": extrem}
+print(f"Extremler: {len(extrem)} at (sık: Arap<={SIK_ARAP}g/İng<={SIK_ING}g, "
+      f"uzun: Arap>={UZUN_ARAP}g/İng>={UZUN_ING}g) | hedef: {out['extremler']['hedef']}")
 
 # Şehir -> TJK program linki (AGF düğmesi il-duyarlı açılır) — varsa göm
 try:
     out["sehir_link"] = json.load(open("sehir_link.json", encoding="utf-8"))
-    print(f"Şehir linkleri: {len(out['sehir_link'])} il gömüldü")
+    _il_say = len(out["sehir_link"].get("program", out["sehir_link"]))
+    _agf_var = "agf1" in out["sehir_link"]
+    print(f"Şehir linkleri: {_il_say} il gömüldü" + (" (AGF linkli)" if _agf_var else ""))
 except Exception:
     out["sehir_link"] = {}
 

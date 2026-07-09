@@ -304,34 +304,28 @@ class AnaTablo:
         return _sayi(r[53])[0]
 
     def _sikistir(self, raw):
-        """Aynı kaynak satırdaki 800 ve derece bloklarını aynı çıktı satırında tut.
-
-        Eski mantık sol(800) ve sağ(derece) blokları ayrı ayrı sıkıştırıp sıra
-        numarasına göre yan yana koyuyordu. 800 kaydı olmayan ya da derece kaydı
-        olmayan satırlarda liste kayıyor, sol tarafta bir at varken sağ tarafta
-        başka at görünebiliyordu.
-        """
-        out = []
+        sol = []
         for r in raw:
-            has_sol = self._sol_dolu(r)
-            has_sag = self._sag_gercek(r)
-            if not has_sol and not has_sag:
-                continue
-
-            ro = [""] * 54
-            if has_sol:
-                for j in range(18):
-                    ro[j] = _norm(r[j])
-
-            ro[18] = ""
-
-            if has_sag:
+            if self._sol_dolu(r):
+                sol.append([_norm(r[j - 1]) for j in range(1, 19)])  # col1..18
+        sag = []
+        for r in raw:
+            if self._sag_gercek(r):
                 rr = [_norm(r[j - 1]) for j in range(20, 55)]  # col20..54 (35)
                 if self._aj_iki(r):
                     rr[16] = "iki"   # sağ blok col17 = çıktı col36
+                sag.append(rr)
+        maxs = max(len(sol), len(sag))
+        out = []
+        for i in range(maxs):
+            ro = [""] * 54
+            if i < len(sol):
+                for j in range(18):
+                    ro[j] = sol[i][j]
+            ro[18] = ""
+            if i < len(sag):
                 for j in range(35):
-                    ro[19 + j] = rr[j]
-
+                    ro[19 + j] = sag[i][j]
             ro[53] = ""  # BB temizle
             out.append(ro)
         return out
@@ -645,13 +639,17 @@ def _tr_upper(s):
             .replace("Ö", "O").replace("Ç", "C"))
 
 
-def _galop_kosu_satiri(rows, kosu_no, sehir=None):
-    """{kosu_no}. Koşu satırını bulur. sehir verilirse o ili içeren başlığı tercih eder
-    (çok-illi galop kaynağında doğru bloğu seçmek için)."""
+def _galop_kosu_satiri(rows, kosu_no, sehir=None, tek_il=False):
+    """{kosu_no}. Koşu satırını bulur.
+    sehir verilirse SADECE o ili içeren başlık kabul edilir (kesin eşleşme).
+    Şehir eşleşmezse:
+      - tek_il=True (o gün tek şehir yarışıyor) -> numara tutan blok güvenle kullanılır;
+      - tek_il=False (çok-illi gün) -> HİÇBİRİ döndürülmez. Yanlış ilin galopunu
+        yapıştırmaktansa (Kocaeli'ye Ankara'nınki) galop boş kalır — bu KASITLI."""
     k1 = f"{kosu_no}. KOŞU"
     k2 = f"{kosu_no}. KOSU"
     sehir_u = _tr_upper(sehir) if sehir else None
-    fallback = 0
+    numara_tutan = 0
     for r in range(1, len(rows) + 1):
         traw = str(_o(rows, r, 1) or "").strip()
         t = traw.upper()
@@ -659,10 +657,13 @@ def _galop_kosu_satiri(rows, kosu_no, sehir=None):
             if sehir_u is None:
                 return r
             if sehir_u in _tr_upper(traw):
-                return r          # doğru il
-            if fallback == 0:
-                fallback = r       # numara tutuyor ama il farklı (yedek)
-    return fallback
+                return r          # doğru il — kesin eşleşme
+            if numara_tutan == 0:
+                numara_tutan = r   # numara tutuyor ama il farklı
+    # şehir eşleşmedi: yalnız tek-illi günde (belirsizlik yok) numara tutanı kullan
+    if sehir_u is not None and tek_il:
+        return numara_tutan
+    return 0                       # çok-illi gün -> yanlış il yapıştırma, boş bırak
 
 
 def _sonraki_galop_kosu(rows, cur):
@@ -759,14 +760,14 @@ def _satir_bos(rows, r, bloklar, genis):
     return True
 
 
-def galop_yerlestir(G, galop_rows, sehir=None):
+def galop_yerlestir(G, galop_rows, sehir=None, tek_il=False):
     bloklar = [1, 7, 13, 19, 25, 31, 37]
     titles = sorted({r for (r, c) in list(G.keys()) if c == 1 and _baslik_kosu_mu(G.get((r, 1)))})
     for r in titles:
         kno = _baslik_kosu_no(G[(r, 1)])
         if kno <= 0:
             continue
-        base = _galop_kosu_satiri(galop_rows, kno, sehir)
+        base = _galop_kosu_satiri(galop_rows, kno, sehir, tek_il)
         if base <= 0:
             continue
         target = r - 18
@@ -815,14 +816,14 @@ def galop_yerlestir(G, galop_rows, sehir=None):
             outcol += 2
 
 
-def songalop_yerlestir(G, songalop_rows, sehir=None):
+def songalop_yerlestir(G, songalop_rows, sehir=None, tek_il=False):
     bloklar = [1, 8, 15, 22, 29, 36, 43]
     titles = sorted({r for (r, c) in list(G.keys()) if c == 1 and _baslik_kosu_mu(G.get((r, 1)))})
     for r in titles:
         kno = _baslik_kosu_no(G[(r, 1)])
         if kno <= 0:
             continue
-        base = _galop_kosu_satiri(songalop_rows, kno, sehir)
+        base = _galop_kosu_satiri(songalop_rows, kno, sehir, tek_il)
         if base <= 0:
             continue
         target = r - 18
@@ -881,7 +882,10 @@ def songalop_yerlestir(G, songalop_rows, sehir=None):
                 atno = _o(songalop_rows, rr, srccol)
                 sekli = _o(songalop_rows, rr, srccol + o_sekli)
                 tarih = _o(songalop_rows, rr, srccol + o_tarih)
-                sehir = _o(songalop_rows, rr, srccol + o_sehir)
+                # DÜZELTME (Elazığ vakası): hücredeki şehir AYRI değişkende tutulur.
+                # Eskiden 'sehir' PARAMETRESİ eziliyordu -> ilk İstanbul/Bursa satırından
+                # sonra TÜM sonraki koşular yanlış ilin bloğundan veri alıyordu.
+                sat_sehir = _o(songalop_rows, rr, srccol + o_sehir)
                 if kenter:
                     G[(od, outcol)] = f"{_temiz_hucre_str(atno)} / {_temiz_hucre_str(sekli)}"
                 else:
@@ -890,7 +894,7 @@ def songalop_yerlestir(G, songalop_rows, sehir=None):
                 tv = _tarih_yaz(tarih)
                 if tv != "":
                     G[(od, outcol + 1)] = tv
-                sv = _temiz_hucre_str(sehir)
+                sv = _temiz_hucre_str(sat_sehir)
                 if sv != "":
                     G[(od, outcol + 2)] = sv
                 od += 1
