@@ -466,6 +466,7 @@ def bugunku_programi_cek():
         except Exception as _e:
             print(f"      NOT: sehir_link.json yazılamadı: {_e}")
 
+        saatler = {}   # {sehir: {"1":"14:30", ...}}  -> web/saatler.json
         for sehir, url in sehir_link.items():
             print(f"\n--- {sehir} ---")
             try:
@@ -482,10 +483,27 @@ def bugunku_programi_cek():
             except Exception as e:
                 print(f"  {sehir} açılamadı: {e}")
                 continue
+            # KOŞU SAATLERİ: program listesindeki "1. Koşu 14.30" düğümlerinden topla
+            try:
+                for m in re.finditer(r"(\d{1,2})\.\s*Ko[şs]u\s*(\d{1,2})[.:](\d{2})", html):
+                    kno, sa, dk = m.group(1), m.group(2), m.group(3)
+                    saatler.setdefault(sehir, {}).setdefault(kno, f"{sa}:{dk}")
+            except Exception:
+                pass
             satirlar, kosu_say = _html_to_sayfa1(html, 0)   # HER İL kendi içinde 1..N
             if satirlar:
                 sehir_sayfa1.append((sehir, satirlar))
             print(f"  {sehir}: {kosu_say} koşu, {len(satirlar)} ham satır")
+
+        # WEB: koşu saatleri (başlık yanında rozet olarak gösterilir)
+        try:
+            import json as _json2
+            if os.path.isdir("web"):
+                _json2.dump(saatler, open(os.path.join("web", "saatler.json"), "w",
+                                          encoding="utf-8"), ensure_ascii=False)
+                print(f"      web/saatler.json yazıldı ({sum(len(v) for v in saatler.values())} koşu saati)")
+        except Exception as _e:
+            print(f"      NOT: saatler.json yazılamadı: {_e}")
     finally:
         try:
             driver.quit()

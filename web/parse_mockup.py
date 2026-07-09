@@ -383,6 +383,22 @@ try:
 except Exception:
     out["sehir_link"] = {}
 
+# Koşu saatleri (tjk_yeni_yer.py üretir) — her koşu başlığına Saat alanı ekle
+try:
+    _saatler = json.load(open("saatler.json", encoding="utf-8"))
+    _n = 0
+    for _b in out.get("Sayfa1", []):
+        _il = _b["header"].get("İl", "")
+        _kno = str(_b["header"].get("Koşu No", "")).strip()
+        _s = _saatler.get(_il, {}).get(_kno, "")
+        if _s:
+            _b["header"]["Saat"] = _s
+            _n += 1
+    out["saatler"] = _saatler
+    print(f"Koşu saatleri: {_n} koşuya saat eklendi")
+except Exception:
+    out["saatler"] = {}
+
 # Geç çıkış raporu (gec_cikis_rapor.py üretir) — varsa siteye göm
 try:
     out["gec_cikis"] = json.load(open("gec_cikis.json", encoding="utf-8"))

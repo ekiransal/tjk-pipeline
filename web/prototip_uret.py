@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """mockup_parsed.json -> tek dosyalık TJK analiz platformu prototipi (HTML)."""
-import json
+import json, datetime
 
 DATA = json.load(open("mockup_parsed.json", encoding="utf-8"))
+DATA["uretim"] = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")   # son güncelleme damgası
 
 HTML = r"""<!DOCTYPE html>
 <html lang="tr">
@@ -150,7 +151,9 @@ HTML = r"""<!DOCTYPE html>
   .tab.on{background:var(--pri2);color:var(--pri)}
   /* KOŞU KARTI */
   .kart{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px;margin-bottom:14px}
-  .kosu-baslik{font-size:16.5px;font-weight:800;margin-bottom:10px}
+  .kosu-baslik{font-size:16.5px;font-weight:800}
+  .kosu-baslik-satir{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .kosusaat{font-size:13px;font-weight:800;color:#1a7f4b;background:#eaf6ee;border:1px solid #bfe3cc;border-radius:20px;padding:4px 13px;white-space:nowrap}
   .meta{display:flex;flex-wrap:wrap;gap:8px}
   .meta .m{background:var(--bg);border:1px solid var(--line);border-radius:9px;
            padding:6px 12px;font-size:12.5px}
@@ -161,6 +164,8 @@ HTML = r"""<!DOCTYPE html>
   .bol-baslik{display:flex;align-items:center;gap:8px;margin:18px 2px 10px;
               font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
   .bol-baslik::after{content:"";flex:1;height:1px;background:var(--line)}
+  /* Detay bölüm başlıkları koşu başlığı gibi: kalın, büyük, koyu — tablo kime ait belli olsun */
+  .bol-baslik.buyuk{font-size:16.5px;font-weight:800;color:var(--txt);text-transform:none;letter-spacing:.2px}
   /* GALOP PANELLERİ */
   .paneller{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
   /* TEK HİZA: galop panelleri alta sarkmasın; sığmazsa yatay kaydırılır */
@@ -269,7 +274,7 @@ HTML = r"""<!DOCTYPE html>
 <div class="wrap">
   <div class="topbar">
     <div class="logo"><div class="ic">🏇</div>TJK Yarış Analiz</div>
-    <div class="sub">Günlük koşu analiz platformu — prototip</div>
+    <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
   </div>
 
   <div class="ustblok">
@@ -864,14 +869,17 @@ function kartHTML(b){
                  .map(t=>({...t,name:"Dede "+t.name}));
   return `
   <div class="kart">
-    <div class="kosu-baslik">${esc(b.title||(h["Koşu No"]+". Koşu"))}</div>
+    <div class="kosu-baslik-satir">
+      <div class="kosu-baslik">${esc(b.title||(h["Koşu No"]+". Koşu"))}</div>
+      ${h["Saat"]?`<span class="kosusaat">🕒 Koşu Saati: ${esc(h["Saat"])}</span>`:""}
+    </div>
     <div class="meta">
       <span class="m"><b>İl</b>${esc(h["İl"]||"")}</span>
       <span class="m"><b>Koşu</b>${esc(h["Koşu No"]||"")}</span>
       ${meta}${yorum}${final}
     </div>
 
-    <div class="bol-baslik">Galoplar</div>
+    <div class="bol-baslik buyuk">Galoplar</div>
     <div class="galoprow">
       <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
         <div class="paneller tekhiza">${gNorm.map(pnl).join("")||'<div class="bos">galop verisi yok</div>'}</div></div>
@@ -879,21 +887,23 @@ function kartHTML(b){
         <div class="paneller tekhiza">${gSon.map(pnl).join("")||'<div class="bos">son galop verisi yok</div>'}</div></div>
     </div>
 
-    <div class="bol-baslik">Toplam Derece — Detay · ${kosuOzet}</div>
-    <div class="tablonot ustte">Not: Yeşil avantaj, kırmızı dezavantaj — işaret değil renk esastır. P50/P66/P75: atın eski koşusuna göre yeni koşudaki avantajı gösterir. Kilo Farkı'nda eksi değer (kilo düşmesi) avantajdır.</div>
+    <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuOzet}</div>
+    <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
-      return b8?`<div class="bol-baslik">Son 800 — Detay · ${kosuOzet}</div>
-    <div class="tablonot ustte">Not: Yeşil avantaj, kırmızı dezavantaj — işaret değil renk esastır. P50/P66/P75: atın eski koşusuna göre yeni koşudaki avantajı gösterir. Kilo Farkı'nda eksi değer (kilo düşmesi) avantajdır.</div>
+      return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuOzet}</div>
+    <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
-    <div class="bol-baslik">Orijin Analizi · ${kosuOzet}</div>
+    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}</div>
     <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavruları</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
 }
 
+if(DATA.uretim){const _u=document.getElementById("uretimNot");
+  if(_u) _u.textContent="  ·  veri: "+DATA.uretim;}
 secIl=iller()[0]; secKosu=kosular(secIl)[0];
 ciz();
 </script>
