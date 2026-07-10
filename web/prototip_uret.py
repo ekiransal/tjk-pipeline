@@ -74,8 +74,8 @@ HTML = r"""<!DOCTYPE html>
 
   
   /* GALOP GRUP KUTULARI: kendi içinde bütün, birbirinden keskin ayrım */
-  .grup30{background:#edf6f2;border:1.5px solid #9fc4b4;border-radius:12px;padding:7px}
-  .grupson{background:#fdf2ea;border:1.5px solid #e4b894;border-radius:12px;padding:7px}
+  .grup30{background:#edf6f2;border:1.5px solid #9fc4b4;border-radius:10px;padding:5px 6px}
+  .grupson{background:#fdf2ea;border:1.5px solid #e4b894;border-radius:10px;padding:5px 6px}
   .grup30 .panel,.grupson .panel{background:#fff}
   /* ORJİN GRUP KUTUSU: 6 tablo tek bütün (baba+dede) */
   .grupor{background:#eef2f9;border:1.5px solid #a9bcdd;border-radius:12px;padding:7px;
@@ -173,25 +173,26 @@ HTML = r"""<!DOCTYPE html>
   .bol-baslik .atlama:hover{color:var(--txt);border-color:#b9c2d0}
   .bol-baslik .atlama.agfc{color:#1a7f4b;background:#eaf6ee;border-color:#bfe3cc}
   .bol-baslik .atlama.agfc:hover{color:#116338}
+  .bol-baslik .ayninot{font-size:11.5px;font-weight:600;color:var(--mut);font-style:italic;letter-spacing:0;text-transform:none}
   /* GALOP PANELLERİ */
   .paneller{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
   /* TEK HİZA: galop panelleri alta sarkmasın; sığmazsa yatay kaydırılır */
-  .paneller.tekhiza{display:flex;flex-wrap:nowrap;overflow:visible;padding-bottom:2px;gap:6px;justify-content:flex-start}
-  .paneller.tekhiza .panel{flex:0 1 auto;min-width:0;padding:4px 6px}   /* SIKI + sola yaslı */
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .panel h4{font-size:11px;font-weight:800;color:var(--pri);margin-bottom:4px;letter-spacing:.2px}
+  .paneller.tekhiza{display:flex;flex-wrap:nowrap;overflow:visible;padding-bottom:2px;gap:4px;justify-content:flex-start}
+  .paneller.tekhiza .panel{flex:0 1 auto;min-width:0;padding:3px 5px}   /* SIKI + sola yaslı */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .panel h4{font-size:10px;font-weight:800;color:var(--pri);margin-bottom:3px;letter-spacing:.2px}
   .panel.sonp h4{color:var(--acc)}
-  .g-satir{display:flex;flex-wrap:wrap;align-items:center;gap:2px 3px;padding:2px 0;
-           border-bottom:1px dashed var(--line);font-size:10px}  /* sığmazsa tarih alt satıra iner, komşu panele TAŞMAZ */
+  .g-satir{display:flex;flex-wrap:wrap;align-items:center;gap:1px 2px;padding:1.5px 0;
+           border-bottom:1px dashed var(--line);font-size:9.5px}  /* sığmazsa tarih alt satıra iner, komşu panele TAŞMAZ */
   .g-satir:last-child{border-bottom:none}
-  .atno{min-width:18px;height:18px;border-radius:6px;background:var(--pri2);color:var(--pri);
-        font-weight:800;display:flex;align-items:center;justify-content:center;font-size:10px}
-  .gdeger{font-weight:700;min-width:32px}
+  .atno{min-width:16px;height:16px;border-radius:5px;background:var(--pri2);color:var(--pri);
+        font-weight:800;display:flex;align-items:center;justify-content:center;font-size:9.5px}
+  .gdeger{font-weight:700;min-width:28px}
   .gdeger.neg{color:#1a7f4b}.gdeger.poz{color:#c23a3a}
-  .sekil{font-size:9px;font-weight:800;border-radius:5px;padding:1px 4px;background:#eef0f4;color:var(--mut)}
-  .gtarih{color:var(--mut);font-size:9.5px;margin-left:auto;text-align:right;white-space:nowrap}
+  .sekil{font-size:8.5px;font-weight:800;border-radius:4px;padding:1px 3px;background:#eef0f4;color:var(--mut)}
+  .gtarih{color:var(--mut);font-size:9px;margin-left:auto;text-align:right;white-space:nowrap}
   .panel{overflow:hidden}   /* içerik komşu panele kesinlikle akmaz */
-  .gsehir{color:var(--acc);font-size:9.5px;font-weight:600}
+  .gsehir{color:var(--acc);font-size:9px;font-weight:600}
   .bos{color:var(--mut);font-size:12px;font-style:italic;padding:6px 0}
   .tablonot{color:var(--mut);font-size:11.5px;font-style:italic;margin-top:8px}
   .tablonot.ustte{margin:0 0 6px;text-align:left}
@@ -888,7 +889,8 @@ function agfAc(ikinci){
   window.open(u,"_blank");
 }
 function galopaGit(){
-  const g=document.getElementById("galopbas");
+  // Son 800'e en yakın galop AŞAĞIDAKİ (orjinlerin üstündeki) blok — oraya kaydır
+  const g=document.getElementById("galopbas2")||document.getElementById("galopbas");
   if(g) g.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
@@ -931,9 +933,16 @@ function kartHTML(b){
                  .filter(t=>t.name!=="Dede Mesafe"||_uzunKosu);
   // BAŞLIK ÇİPLERİ: galopa zıpla + AGF aç (8+ koşulu günde iki altılı)
   const _N=kosular(secIl).length;
-  const cipler=`<span class="atlama" onclick="galopaGit()">⬆ Galoplar</span>`+
-    `<span class="atlama agfc" onclick="agfAc(false)">${_N>=8?"1. AGF":"AGF"}</span>`+
+  const agfCip=`<span class="atlama agfc" onclick="agfAc(false)">${_N>=8?"1. AGF":"AGF"}</span>`+
     (_N>=8?`<span class="atlama agfc" onclick="agfAc(true)">2. AGF</span>`:"");
+  const cipler=`<span class="atlama" onclick="galopaGit()">⬇ Galoplar</span>`+agfCip;
+  // GALOP BLOĞU: hem sayfa başında hem ORJİNLERİN ÜSTÜNDE aynen gösterilir
+  const galopBlok=`<div class="galoprow">
+      <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
+        <div class="paneller tekhiza">${gNorm.map(pnl).join("")||'<div class="bos">galop verisi yok</div>'}</div></div>
+      <div class="grupson"><div class="gbaslik son">🟠 SON GALOP</div>
+        <div class="paneller tekhiza">${gSon.map(pnl).join("")||'<div class="bos">son galop verisi yok</div>'}</div></div>
+    </div>`;
   return `
   <div class="kart">
     <div class="kosu-baslik-satir">
@@ -947,12 +956,7 @@ function kartHTML(b){
     </div>
 
     <div class="bol-baslik buyuk" id="galopbas">Galoplar</div>
-    <div class="galoprow">
-      <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
-        <div class="paneller tekhiza">${gNorm.map(pnl).join("")||'<div class="bos">galop verisi yok</div>'}</div></div>
-      <div class="grupson"><div class="gbaslik son">🟠 SON GALOP</div>
-        <div class="paneller tekhiza">${gSon.map(pnl).join("")||'<div class="bos">son galop verisi yok</div>'}</div></div>
-    </div>
+    ${galopBlok}
 
     <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuOzet}</div>
     <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
@@ -963,7 +967,10 @@ function kartHTML(b){
     <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
-    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}${cipler}</div>
+    <div class="bol-baslik buyuk" id="galopbas2">Galoplar <span class="ayninot">— yukarıdaki galopların aynısı</span></div>
+    ${galopBlok}
+
+    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}${agfCip}</div>
     <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavruları</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
