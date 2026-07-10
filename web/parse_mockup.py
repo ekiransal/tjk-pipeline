@@ -395,6 +395,30 @@ try:
 except Exception:
     out["sehir_link"] = {}
 
+# BABA ADLARI: Sayfa1 program sayfasından (Mesafe orjin tablosunda gösterilir)
+# Anahtar = normalize koşu başlığı (il ayracı gerektirmez, başlık zaten benzersiz)
+out["babalar"] = {}
+try:
+    if "Sayfa1" in wb.sheetnames:
+        def _normb(s):
+            return re.sub(r"\s+", " ", str(s or "").strip()).upper()
+        _cur = None
+        for _row in wb["Sayfa1"].iter_rows(values_only=True):
+            _c0 = str(_row[0] or "").strip()
+            if re.match(r"^\d+\.\s*Koşu", _c0):
+                _cur = _normb(_c0)
+                out["babalar"].setdefault(_cur, {})
+                continue
+            if _cur and _c0.isdigit() and len(_row) > 3:
+                _orj = str(_row[3] or "")
+                _baba = re.sub(r"\(.*?\)", "", _orj.split("-")[0]).strip()
+                if _baba:
+                    out["babalar"][_cur][_c0] = _baba
+        print(f"Baba adları: {sum(len(v) for v in out['babalar'].values())} at, "
+              f"{len(out['babalar'])} koşu")
+except Exception as _e:
+    print(f"  NOT: baba adları okunamadı: {_e}")
+
 # Koşu saatleri (tjk_yeni_yer.py üretir) — her koşu başlığına Saat alanı ekle
 try:
     _saatler = json.load(open("saatler.json", encoding="utf-8"))

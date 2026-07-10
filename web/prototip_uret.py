@@ -152,8 +152,17 @@ HTML = r"""<!DOCTYPE html>
   /* KOŞU KARTI */
   .kart{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px;margin-bottom:14px}
   .kosu-baslik{font-size:16.5px;font-weight:800}
-  .kosu-baslik-satir{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .kosu-baslik-satir{display:flex;align-items:baseline;justify-content:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px}   /* saat başlığın hemen yanında */
   .kosusaat{font-size:13px;font-weight:800;color:#1a7f4b;background:#eaf6ee;border:1px solid #bfe3cc;border-radius:20px;padding:4px 13px;white-space:nowrap}
+  /* TARİH GEZİNTİSİ: ◀ 10.07.2026 ▶ (arşivli günler arasında) */
+  .tarihbar{display:flex;align-items:center;gap:9px;margin-left:auto}
+  .tarihbar:empty{display:none}
+  .tarihbar .tarih{font-size:14px;font-weight:800;color:var(--txt);background:var(--card);
+    border:1px solid var(--line);border-radius:9px;padding:5px 13px}
+  .tarihbar .tnav{font-size:15px;font-weight:800;color:var(--pri);text-decoration:none;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-radius:9px;padding:4px 11px}
+  .tarihbar .tnav:hover{background:var(--pri2)}
+  .tarihbar .tnav.pasif{color:#c9cfda;cursor:default;pointer-events:none}
   .meta{display:flex;flex-wrap:wrap;gap:8px}
   .meta .m{background:var(--bg);border:1px solid var(--line);border-radius:9px;
            padding:6px 12px;font-size:12.5px}
@@ -188,14 +197,14 @@ HTML = r"""<!DOCTYPE html>
   .atno{min-width:16px;height:16px;border-radius:5px;background:var(--pri2);color:var(--pri);
         font-weight:800;display:flex;align-items:center;justify-content:center;font-size:9.5px}
   .gdeger{font-weight:700;min-width:28px}
-  .gdeger.neg{color:#1a7f4b}.gdeger.poz{color:#c23a3a}
+  .gdeger.neg{color:#2f6fb3}.gdeger.poz{color:#c23a3a}   /* galop avantajı: MAVİ */
   .sekil{font-size:8.5px;font-weight:800;border-radius:4px;padding:1px 3px;background:#eef0f4;color:var(--mut)}
   .gtarih{color:var(--mut);font-size:9px;margin-left:auto;text-align:right;white-space:nowrap}
   .panel{overflow:hidden}   /* içerik komşu panele kesinlikle akmaz */
   .gsehir{color:var(--acc);font-size:9px;font-weight:600}
   .bos{color:var(--mut);font-size:12px;font-style:italic;padding:6px 0}
   .tablonot{color:var(--mut);font-size:11.5px;font-style:italic;margin-top:8px}
-  .tablonot.ustte{margin:0 0 6px;text-align:left}
+  .tablonot.ustte{margin:0 0 6px;text-align:left;font-size:10px;line-height:1.35;color:#98a1b0;max-width:980px}
   /* ANALİZ TABLOLARI */
   .tablolar{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
   .tablo{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -213,6 +222,8 @@ HTML = r"""<!DOCTYPE html>
   .tablolar.hepsi td{font-size:10px;padding:3px 4px}
   .tablolar.hepsi td.no{width:26px}
   .tablolar.hepsi td.say{font-size:9.5px}
+  .tablolar.hepsi td.babaad{font-size:8.5px;color:var(--mut);font-weight:600;text-align:left;white-space:nowrap;max-width:92px;overflow:hidden}
+  .tablolar.hepsi .tablo.t-Mesafe{width:265px}   /* baba sütunu için genişçe */
   @media(max-width:1150px){.tablolar.hepsi{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:700px){.tablolar.hepsi{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:440px){.tablolar.hepsi{grid-template-columns:1fr}}
@@ -230,7 +241,8 @@ HTML = r"""<!DOCTYPE html>
          display:inline-block;max-width:100%;vertical-align:top}  /* kutu tabloya sarılır, boş sağ kalmaz */
   .detay table{font-size:10px;white-space:normal;width:auto;margin:0}  /* genişlik: içerik kadar (DAR) */
   .detay th{position:sticky;top:0;background:var(--bg);z-index:2;padding:3px 2px;
-            white-space:normal;line-height:1.1;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center;font-size:9.5px}
+            white-space:normal;line-height:1.1;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center;font-size:9.5px;
+            font-weight:800;color:var(--txt)}   /* başlıklar KOYU */
   .detay td{padding:2px 2px;border:1px solid #c9cfd9;line-height:1.2;text-align:center}
   .detay tr:nth-child(even) td{background:#fafbfc}
   .detay tr:hover td{background:#e2efe8 !important}
@@ -242,10 +254,10 @@ HTML = r"""<!DOCTYPE html>
   .detay td.num{text-align:center}
   .detay td.drc{font-weight:800;color:#111}
   .detay td.sonno{font-weight:800;background:var(--pri2)}
-  .detay td.kfiyi{color:#1a7f4b;font-weight:700}
+  .detay td.kfiyi{color:#2f6fb3;font-weight:700}   /* avantaj rengi: MAVİ (yeşil = kazanan işareti) */
   .detay td.kfkotu{color:#c23a3a;font-weight:700}
   .detay td.dom{font-weight:700}
-  .detay td.dom.poz{color:#1a7f4b}
+  .detay td.dom.poz{color:#2f6fb3}   /* avantaj: MAVİ */
   .detay td.dom.neg{color:#c23a3a}
   .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
   /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at (numara geçen HER YERDE) */
@@ -256,8 +268,9 @@ HTML = r"""<!DOCTYPE html>
   .ex-satir .kno.kzn{background:#eaf6ee}
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
-  .ustsol{flex:1;min-width:0}
+  .ustsol{flex:0 1 auto;min-width:0}   /* Dikkat paneli seçicilerin hemen yanına gelir */
   #yan{width:300px;flex-shrink:0}
+  #yan .kart.extrem{border:1.5px solid #eec387;border-left:5px solid #e8a13d;background:#fffdf8}   /* dikkat çeker ama bağırmaz */
   #yan .kart{margin-bottom:0}
   .extrem h3{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .extrem .grup{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
@@ -289,6 +302,7 @@ HTML = r"""<!DOCTYPE html>
   <div class="topbar">
     <div class="logo"><div class="ic">🏇</div>TJK Yarış Analiz</div>
     <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
+    <div class="tarihbar" id="tarihnav"></div>
   </div>
 
   <div class="ustblok">
@@ -297,8 +311,6 @@ HTML = r"""<!DOCTYPE html>
       <div class="secici kosusec"><span class="lbl">Koşu</span><span id="kosular"></span></div>
       <div class="tabs" id="tabs">
         <button class="tab on" data-t="Sayfa1">Analiz</button>
-        <button class="tab" data-t="AGF">AGF</button>
-        <button class="tab" data-t="AGF2" style="display:none">2. AGF</button>
       </div>
     </div>
     <div id="yan"></div>
@@ -336,23 +348,9 @@ function ciz(){
     b.onclick=()=>{secKosu=no; derF={sehir:"",msf:"",ay:""}; ciz();};
     koBox.appendChild(b);
   }
-  // AGF düğmeleri: 8+ koşulu günde "1. AGF" + "2. AGF", az koşulu günde tek "AGF"
-  {
-    const N=kosular(secIl).length;
-    const b1=document.querySelector('.tab[data-t="AGF"]');
-    const b2=document.querySelector('.tab[data-t="AGF2"]');
-    if(b1) b1.textContent=(N>=8)?"1. AGF":"AGF";
-    if(b2) b2.style.display=(N>=8)?"":"none";
-  }
   document.querySelectorAll(".tab").forEach(t=>{
     t.classList.toggle("on",t.dataset.t===secTab);
-    t.onclick=()=>{
-      if(t.dataset.t==="AGF"||t.dataset.t==="AGF2"){   // AGF: TJK AGF tablosu yeni sekmede
-        agfAc(t.dataset.t==="AGF2");
-        return;
-      }
-      secTab=t.dataset.t; ciz();
-    };
+    t.onclick=()=>{ secTab=t.dataset.t; ciz(); };
   });
   // EXTREMLER (sağ üst) — SEÇİLİ KOŞUYA özel
   const yan=document.getElementById("yan");
@@ -404,14 +402,6 @@ function ciz(){
   const b=blokBul(secTab,secIl,secKosu);
   if(!b){ ic.innerHTML='<div class="kart bos">Bu koşu için veri yok.</div>'; return; }
   ic.innerHTML=kartHTML(b);
-  // DİKKAT PANELİ HİZASI: sağ kenarı Toplam Derece tablosunun sağ kenarına çekilir
-  requestAnimationFrame(()=>{
-    const ub=document.querySelector(".ustblok"), d=document.querySelector("#icerik .detay");
-    if(ub&&d){
-      const w=d.getBoundingClientRect().right - ub.getBoundingClientRect().left;
-      ub.style.maxWidth=Math.max(620, Math.round(w))+"px";
-    }
-  });
   // KAZANAN İŞARETİ HER YERDE: galop satırları, orjin tabloları, dikkat paneli.
   // (Detay tablolarındaki ✓ kartHTML içinde basılır; burası numara geçen diğer yerler.)
   (()=>{
@@ -456,10 +446,22 @@ function tabloHTML(t, zemin){
   });
   let maxd=0;
   for(const r of trows){const v=parseFloat(String(r[1]).replace(",","."));if(!isNaN(v))maxd=Math.max(maxd,Math.abs(v));}
+  // MESAFE tablosunda baba adı sütunu (program sayfasından; kısaltılmış)
+  const babaGoster=(t.name==="Mesafe");
+  const babaMap=(()=>{
+    if(!babaGoster) return {};
+    const bb=DATA.babalar||{};
+    const blok=blokBul("Sayfa1",secIl,secKosu);
+    if(!blok) return {};
+    const anah=String(blok.title||"").toUpperCase().replace(/\s+/g," ").trim();
+    return bb[anah]||{};
+  })();
+  const babaKisa=s=>{s=String(s||"").trim();return s.length>14?s.slice(0,13)+"…":s;};
   const rows=trows.map((r,i)=>{
     const v=parseFloat(String(r[1]).replace(",","."));
     const w=(maxd>0&&!isNaN(v))?Math.round(Math.abs(v)/maxd*100):0;
     return `<tr><td class="no">${esc(r[0])}</td>
+      ${babaGoster?`<td class="babaad" title="${esc(babaMap[String(r[0]).trim()]||"")}">${esc(babaKisa(babaMap[String(r[0]).trim()]))}</td>`:""}
       <td class="deg"><div class="bar" style="width:${w}%"></div><span>${esc(r[1])}</span></td>
       <td class="say">${esc(r[2])}</td></tr>`;
   }).join("");
@@ -471,7 +473,7 @@ function tabloHTML(t, zemin){
                  "Sprinter":"Sprintle / Toplam Kazanma","Kaçak":"Kaçarak / Toplam Kazanma",
                  "Dede Kalite":"Elit Kazanma / Toplam Kazanma","Dede Mesafe":"Bu Mesafede / Toplam Kazanma"};
   return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${ORJ_AD[t.name]||t.name}</h4>
-    <table><tr><th>At No</th><th>Değer</th><th>${SAYI_AD[t.name]||"Sayı"}</th></tr>${rows}</table></div>`;
+    <table><tr><th>At No</th>${babaGoster?"<th>Baba</th>":""}<th>Değer</th><th>${SAYI_AD[t.name]||"Sayı"}</th></tr>${rows}</table></div>`;
 }
 
 // MOBİLDE GİZLENEN ikincil kolonlar (telefonda sade görünüm; 'tüm kolonlar' ile açılır)
@@ -517,6 +519,11 @@ function detayHTML(b, tab){
   const _snk=(typeof sonucGecerli==="function"&&sonucGecerli())
     ?(((SONUC.iller||{})[b.header["İl"]]||{})[String(b.header["Koşu No"])]):null;
   const kazananNo=(_snk&&_snk.kazanan!=null)?String(_snk.kazanan):null;
+  // KOŞUNUN KENDİSİ Maiden / Şartlı 1 / Şartlı 19 ise dominans HİÇ gösterilmez
+  // (geçmiş satır başka koşu türünden gelse bile). Satır bazlı kural ayrıca durur.
+  const _tUp=String(b.title||"").toUpperCase().replace(/\s+/g," ");
+  const domYokKosu=/MAIDEN/.test(_tUp)||/[ŞS]ARTLI 1(?![0-9])/.test(_tUp)||/[ŞS]ARTLI 19(?![0-9])/.test(_tUp);
+  const kosuKisa=/MAIDEN/.test(_tUp)?"Maiden":(/[ŞS]ARTLI 19(?![0-9])/.test(_tUp)?"Şartlı 19":"Şartlı 1");
   if(!rows.length) return '<div class="bos" style="padding:12px">Bu koşunun atlarının geçmiş koşu kaydı yok — ilk kez koşacak taylar (örn. 2 yaşlılar) olabilir.</div>';
   const basliklar = tab==="Sayfa1"? BASLIK_TD : BASLIK_S8;
   const sil=new Set((SIL[tab]||[]).map(x=>x-1));
@@ -636,7 +643,10 @@ function detayHTML(b, tab){
       v=p.length?p[p.length-1]:v; cls="num";
     }
     else if(domk.has(c)){                       // BİRLEŞİK AVANTAJ: HP + 2 x Kilo (tek sayı, RENKSİZ)
-      if(domGizle){                                 // Maiden / Şartlı 1 / Şartlı 19 -> ortada soluk etiket, yanlarda tire
+      if(domYokKosu){                               // KOŞUNUN KENDİSİ Maiden/Ş1/Ş19 -> üç hücre de soluk çizgi
+        v="—"; cls="num dom yokd";
+      }
+      else if(domGizle){                            // geçmiş satır Maiden/Ş1/Ş19'dan -> ortada soluk etiket
         const kisa=kcinsUp.startsWith("MAIDEN")?"Maiden":(kcinsUp.includes("19")?"Şartlı 19":"Şartlı 1");
         v=(c===domList[2])?kisa:"—"; cls="num dom yokd";
       }
@@ -958,20 +968,20 @@ function kartHTML(b){
     <div class="bol-baslik buyuk" id="galopbas">Galoplar</div>
     ${galopBlok}
 
-    <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuOzet}</div>
-    <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
+    <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuOzet}${agfCip}</div>
+    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
       return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuOzet}${cipler}</div>
-    <div class="tablonot ustte">Not: Tablo genelinde yeşil yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
+    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
     <div class="bol-baslik buyuk" id="galopbas2">Galoplar <span class="ayninot">— yukarıdaki galopların aynısı</span></div>
     ${galopBlok}
 
     <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}${agfCip}</div>
-    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN — Babanın ve Dedenin (annenin babası) yavruları</div>
+    <div class="grupor"><div class="gbaslik or">🔵 ORİJİN</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
 }
@@ -993,6 +1003,27 @@ function sonucYukle(){
   }catch(e){}
 }
 sonucYukle(); setInterval(sonucYukle, 10*60*1000);
+// TARİH GEZİNTİSİ: sunucudaki arşiv listesine göre ◀ tarih ▶ kurulur.
+// Bu sayfanın günü DATA.extremler.hedef; eski sayfa açıkken de kendi gününü bilir.
+(function(){
+  const kendi=(DATA.extremler&&DATA.extremler.hedef)||"";           // GG.AA.YYYY
+  const kutu=document.getElementById("tarihnav");
+  if(!kutu||!kendi) return;
+  const iso=t=>{const p=t.split(".");return p.length===3?p[2]+"-"+p[1]+"-"+p[0]:"";};
+  try{
+    fetch("analiz-tarihler",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(list=>{
+      if(!Array.isArray(list)) return;
+      const ben=iso(kendi);
+      if(!list.includes(ben)) list=list.concat([ben]).sort();
+      const i=list.indexOf(ben);
+      const link=t=>"analiz?t="+t;
+      kutu.innerHTML=
+        (i>0?`<a class="tnav" href="${link(list[i-1])}">◀</a>`:`<span class="tnav pasif">◀</span>`)+
+        `<span class="tarih">${kendi}</span>`+
+        (i<list.length-1?`<a class="tnav" href="${link(list[i+1])}">▶</a>`:`<span class="tnav pasif">▶</span>`);
+    }).catch(()=>{});
+  }catch(e){}
+})();
 ciz();
 </script>
 </body>
