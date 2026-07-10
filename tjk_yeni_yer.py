@@ -803,9 +803,16 @@ def ciktiyi_yaz(sayfa1_rows, sayfa2_rows, yeniyer_rows, derece_rows=None, yy_gri
 
         _kaydirilan = 0
         for r in range(1, maxr + 1):
-            # AT satırı (800+derece) ya da derece DEVAM satırı -> derece kısmını sola kaydır
-            at_800 = _metin_mi(yy_grid.get((r, 2))) and _tarih_mi(yy_grid.get((r, 3)))
-            derece_devam = _metin_mi(yy_grid.get((r, 21))) and _tarih_mi(yy_grid.get((r, 28)))
+            # AT satırı (800+derece) ya da derece DEVAM satırı -> derece kısmını sola kaydır.
+            # DÜZELTME (Bursa 4 vakası): galop hücreleri "1 / -2,20 / R" formatındadır ("/" içerir);
+            # son galop blokları tesadüfen kolon 21'e denk gelince derece satırı sanılıp
+            # 19 kolon sola kayıyordu (ilk veri satırı uçuyordu). At adında "/" olmaz.
+            _c2  = _txt(yy_grid.get((r, 2)))
+            _c21 = _txt(yy_grid.get((r, 21)))
+            at_800 = (_metin_mi(yy_grid.get((r, 2))) and _tarih_mi(yy_grid.get((r, 3)))
+                      and "/" not in _c2)
+            derece_devam = (_metin_mi(yy_grid.get((r, 21))) and _tarih_mi(yy_grid.get((r, 28)))
+                            and "/" not in _c21)
             if at_800 or derece_devam:
                 row = [yy_grid.get((r, c), None) for c in range(20, 55)]  # eski 20-54 -> 1-35
                 if any(v not in (None, "") for v in row):

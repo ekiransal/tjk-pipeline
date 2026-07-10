@@ -920,8 +920,15 @@ function kartHTML(b){
   const pnl=(g)=>`<div class="panel${g.son?" sonp":""}"><h4>${esc(String(g.name).replace(/\s*\+\s*400/g,""))}</h4>
       ${g.rows.length?g.rows.map(galopSatir).join(""):'<div class="bos">kayıt yok</div>'}</div>`;
   const setA=b.tables.filter(t=>t.col<16);
+  // DEDE SADELEŞTİRME: Dede Kalite gösterilmez; Dede Mesafe yalnız UZUN koşuda
+  // (İngiliz >=1800m, Arap >=1900m). Veri boru hattında duruyor, sadece gizli.
+  const _msfN=parseInt(String(h["Mesafe"]||"").replace(/\D/g,""),10)||0;
+  const _arapMi=/ARAP/i.test(String(h["Irk"]||"")+" "+String(b.title||""));
+  const _uzunKosu=_arapMi?(_msfN>=1900):(_msfN>=1800);
   const setDede=b.tables.filter(t=>t.col>=16)
-                 .map(t=>({...t,name:"Dede "+t.name}));
+                 .map(t=>({...t,name:"Dede "+t.name}))
+                 .filter(t=>t.name!=="Dede Kalite")
+                 .filter(t=>t.name!=="Dede Mesafe"||_uzunKosu);
   // BAŞLIK ÇİPLERİ: galopa zıpla + AGF aç (8+ koşulu günde iki altılı)
   const _N=kosular(secIl).length;
   const cipler=`<span class="atlama" onclick="galopaGit()">⬆ Galoplar</span>`+
