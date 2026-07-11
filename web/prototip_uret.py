@@ -337,7 +337,20 @@ const DATA = __DATA__;
 let secIl=null, secKosu=null, secTab="Sayfa1";
 
 function bloklar(t){ return DATA[t]||[]; }
-function iller(){ const s=[]; for(const b of bloklar("Sayfa1")){const il=b.header["İl"]; if(il&&!s.includes(il))s.push(il);} return s; }
+function iller(){
+  const s=[]; for(const b of bloklar("Sayfa1")){const il=b.header["İl"]; if(il&&!s.includes(il))s.push(il);}
+  // İlk koşu saatine göre sırala: en erken başlayan il en solda
+  const ilkSaat=il=>{
+    let en=9999;
+    for(const b of bloklar("Sayfa1")){
+      if(b.header["İl"]!==il) continue;
+      const m=String(b.header["Saat"]||"").match(/(\d{1,2})[.:](\d{2})/);
+      if(m){ const dk=parseInt(m[1],10)*60+parseInt(m[2],10); if(dk<en) en=dk; }
+    }
+    return en;
+  };
+  return s.sort((a,b)=>ilkSaat(a)-ilkSaat(b));
+}
 function kosular(il){ return bloklar("Sayfa1").filter(b=>b.header["İl"]===il).map(b=>b.header["Koşu No"]); }
 function blokBul(t,il,no){ return bloklar(t).find(b=>b.header["İl"]===il&&b.header["Koşu No"]===no); }
 
@@ -384,7 +397,9 @@ function ciz(){
           const at=String(r[1]??"").trim().toUpperCase().replace(/\d+$/,"").trim();
           if(!at||gor.has(at)) continue; gor.add(at);
           const v=gec[at]; if(!v||!v.problem) continue;
-          const g=v.kosular.filter(k=>k.boy).map(k=>`${k.tarih} (${k.boy})`).join(", ");
+          const KAC=["son koşu","2 koşu önce","3 koşu önce"];
+          const g=v.kosular.map((k,i)=>k.boy?`${KAC[i]||(i+1)+" koşu önce"}: ${k.tarih} (${k.boy})`:null)
+                           .filter(Boolean).join(" · ");
           const ds=v.kosular.filter(k=>k.dsiz).map(k=>k.tarih).join(", ");
           if(g)  out.push({tip:"gec",  no, at, det:g});
           if(ds) out.push({tip:"dsiz", no, at, det:ds});
