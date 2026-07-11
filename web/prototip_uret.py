@@ -155,7 +155,7 @@ HTML = r"""<!DOCTYPE html>
   .kosu-baslik-satir{display:flex;align-items:baseline;justify-content:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px}   /* saat başlığın hemen yanında */
   .kosusaat{font-size:13px;font-weight:800;color:#1a7f4b;background:#eaf6ee;border:1px solid #bfe3cc;border-radius:20px;padding:4px 13px;white-space:nowrap}
   /* TARİH GEZİNTİSİ: ◀ 10.07.2026 ▶ (arşivli günler arasında) */
-  .tarihbar{display:flex;align-items:center;gap:9px;margin-left:auto}
+  .tarihbar{display:flex;align-items:center;gap:9px;margin-left:2px}
   .tarihbar:empty{display:none}
   .tarihbar .tarih{font-size:14px;font-weight:800;color:var(--txt);background:var(--card);
     border:1px solid var(--line);border-radius:9px;padding:5px 13px}
@@ -182,6 +182,8 @@ HTML = r"""<!DOCTYPE html>
   .bol-baslik .atlama:hover{color:var(--txt);border-color:#b9c2d0}
   .bol-baslik .atlama.agfc{color:#1a7f4b;background:#eaf6ee;border-color:#bfe3cc}
   .bol-baslik .atlama.agfc:hover{color:#116338}
+  .bol-baslik .atlama.bilgi{color:var(--acc);background:#fdf1ec;border-color:#f3d5c8;cursor:default}
+  .bol-baslik .atlama.bilgi:hover{color:var(--acc);border-color:#f3d5c8}
   .bol-baslik .ayninot{font-size:11.5px;font-weight:600;color:var(--mut);font-style:italic;letter-spacing:0;text-transform:none}
   /* GALOP PANELLERİ */
   .paneller{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
@@ -269,6 +271,11 @@ HTML = r"""<!DOCTYPE html>
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:0 1 auto;min-width:0}   /* Dikkat paneli seçicilerin hemen yanına gelir */
+  .tanitimkutu{flex:0 0 320px;background:var(--card);border:1px solid #e3e8ef;
+    border-radius:14px;padding:8px 8px 6px;box-shadow:0 1px 4px rgba(20,40,60,.06)}
+  .tanitimkutu .tbaslik{font-size:14.5px;font-weight:900;color:var(--pri);letter-spacing:.5px;margin:1px 2px 7px}
+  .tanitimkutu video{width:100%;border-radius:10px;display:block;background:#000}
+  @media(max-width:980px){.tanitimkutu{flex:1 1 100%}}
   #yan{width:300px;flex-shrink:0}
   #yan .kart.extrem{border:1.5px solid #eec387;border-left:5px solid #e8a13d;background:#fffdf8}   /* dikkat çeker ama bağırmaz */
   #yan .kart{margin-bottom:0}
@@ -301,8 +308,8 @@ HTML = r"""<!DOCTYPE html>
 <div class="wrap">
   <div class="topbar">
     <div class="logo"><div class="ic">🏇</div>TJK Yarış Analiz</div>
-    <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
     <div class="tarihbar" id="tarihnav"></div>
+    <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
   </div>
 
   <div class="ustblok">
@@ -314,10 +321,15 @@ HTML = r"""<!DOCTYPE html>
       </div>
     </div>
     <div id="yan"></div>
+    <div class="tanitimkutu" id="tanitimkutu">
+      <div class="tbaslik">🎬 SİTEMİZ NASIL OKUNUR? · 90 sn</div>
+      <video src="tanitim.mp4" controls playsinline preload="metadata"
+        onerror="document.getElementById('tanitimkutu').style.display='none'"></video>
+    </div>
   </div>
 
   <div id="icerik"></div>
-  <footer>Prototip — veriler örnek Excel'den alındı. © TJK Analiz</footer>
+  <footer>Bu sayfadaki tüm değerlendirmeler tamamen matematiksel ve istatistiksel hesaplamalara dayanır; hissî ya da tahminî hiçbir yorum içermez. © GanyanRadar</footer>
 </div>
 
 <script>
@@ -941,11 +953,20 @@ function kartHTML(b){
                  .map(t=>({...t,name:"Dede "+t.name}))
                  .filter(t=>t.name!=="Dede Kalite")
                  .filter(t=>t.name!=="Dede Mesafe"||_uzunKosu);
-  // BAŞLIK ÇİPLERİ: galopa zıpla + AGF aç (8+ koşulu günde iki altılı)
+  // BAŞLIK ÇİPLERİ: her bölüm başlığında koşu no + kaçıncı ayak + yorum/kuvvet + AGF
   const _N=kosular(secIl).length;
-  const agfCip=`<span class="atlama agfc" onclick="agfAc(false)">${_N>=8?"1. AGF":"AGF"}</span>`+
-    (_N>=8?`<span class="atlama agfc" onclick="agfAc(true)">2. AGF</span>`:"");
-  const cipler=`<span class="atlama" onclick="galopaGit()">⬇ Galoplar</span>`+agfCip;
+  const _k=parseInt(h["Koşu No"],10)||1;
+  // ALTILI ÜYELİĞİ: 1. altılı = koşu 1-6; 2. altılı = SON 6 ayak (N>=8)
+  const _agfList=[];
+  if(_k>=1&&_k<=6) _agfList.push({no:1, ayak:_k, lbl:(_N>=8?"1. AGF":"AGF")});
+  if(_N>=8&&_k>=_N-5&&_k<=_N) _agfList.push({no:2, ayak:_k-(_N-6), lbl:"2. AGF"});
+  const agfCip=_agfList.map(a=>`<span class="atlama agfc" onclick="agfAc(${a.no===2})">${a.lbl} · ${a.ayak}. ayak</span>`).join("");
+  const yorumCip=yorumSon?`<span class="atlama bilgi">Yorum: ${esc(yorumSon)}</span>`:"";
+  const kuvvetCip=(h["Final"]&&_fk&&!_notr)?`<span class="atlama bilgi">Kuvvet: ${esc(_fk)}</span>`:"";
+  const galopZip=`<span class="atlama" onclick="galopaGit()">⬇ Galoplar</span>`;
+  const basCip=agfCip+yorumCip+kuvvetCip;                     // AGF önce, sonra yorum/kuvvet
+  // Başlık ortası: "6. Koşu · İngiliz Maiden/Dişi 1700 Çim"
+  const kosuBilgi=`${esc(h["Koşu No"])}. Koşu · ${h["Irk"]?esc(h["Irk"])+" ":""}${kosuOzet}`;
   // GALOP BLOĞU: hem sayfa başında hem ORJİNLERİN ÜSTÜNDE aynen gösterilir
   const galopBlok=`<div class="galoprow">
       <div class="grup30"><div class="gbaslik">🟢 30 GÜNLÜK GALOP</div>
@@ -956,7 +977,14 @@ function kartHTML(b){
   return `
   <div class="kart">
     <div class="kosu-baslik-satir">
-      <div class="kosu-baslik">${esc(b.title||(h["Koşu No"]+". Koşu"))}</div>
+      <div class="kosu-baslik">${esc((()=>{
+        // BAŞLIK TEMİZLİĞİ (yalnız görünüm): kilolar, mesafe-zemin tekrarı, E.İ.D. atılır
+        let t=String(b.title||(h["Koşu No"]+". Koşu"));
+        t=t.replace(/,?\s*[\d.,]+\s*kg/gi,"");
+        t=t.replace(/,?\s*E\.?\s*İ\.?\s*D\.?\s*:?\s*[\d.,:]+/gi,"");
+        t=t.replace(/,?\s*\d{3,4}\s+(Kum|Çim|Sentetik)/gi,"");
+        return t.replace(/\s{2,}/g," ").replace(/\s*,\s*,+/g,",").replace(/[\s,]+$/,"").trim();
+      })())}</div>
       ${h["Saat"]?`<span class="kosusaat">🕒 Koşu Saati: ${esc(h["Saat"])}</span>`:""}
     </div>
     <div class="meta">
@@ -968,19 +996,19 @@ function kartHTML(b){
     <div class="bol-baslik buyuk" id="galopbas">Galoplar</div>
     ${galopBlok}
 
-    <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuOzet}${agfCip}</div>
+    <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuBilgi}${basCip}</div>
     <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
-      return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuOzet}${cipler}</div>
+      return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuBilgi}${agfCip}${galopZip}${yorumCip}${kuvvetCip}</div>
     <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
     <div class="bol-baslik buyuk" id="galopbas2">Galoplar <span class="ayninot">— yukarıdaki galopların aynısı</span></div>
     ${galopBlok}
 
-    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuOzet}${agfCip}</div>
+    <div class="bol-baslik buyuk">Orijin Analizi · ${kosuBilgi}${basCip}</div>
     <div class="grupor"><div class="gbaslik or">🔵 ORİJİN</div>
     <div class="tablolar hepsi">${setA.concat(setDede).map(t=>tabloHTML(t, h["Zemin"])).join("")}</div></div>
   </div>`;
@@ -990,15 +1018,21 @@ if(DATA.uretim){const _u=document.getElementById("uretimNot");
   if(_u) _u.textContent="  ·  veri: "+DATA.uretim;}
 secIl=iller()[0]; secKosu=kosular(secIl)[0];
 // SONUÇLAR: sunucu yarım saatte bir sonuclar.json günceller; sayfa 10 dk'da bir okur.
-// Tarih eşleşmezse (dünün sonucu / yarının programı) işaret BASILMAZ.
+// Tarih eşleşmezse (arşiv sayfası / yarının programı) kendi gününün KALICI arşivine bakar:
+// sonucarsiv/YYYY-MM-DD.json — böylece eski günlerin tikleri asla kaybolmaz.
 let SONUC={}, _sonucStr="";
 function sonucGecerli(){ return SONUC && SONUC.tarih && DATA.extremler && SONUC.tarih===DATA.extremler.hedef; }
+function _sonucUygula(d){ const s=JSON.stringify(d); if(s!==_sonucStr){ _sonucStr=s; SONUC=d; ciz(); } }
 function sonucYukle(){
   try{
+    const hedef=(DATA.extremler&&DATA.extremler.hedef)||"";                 // GG.AA.YYYY
+    const iso=hedef?hedef.split(".").reverse().join("-"):"";                // YYYY-MM-DD
     fetch("sonuclar.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{
-      if(!d) return;
-      const s=JSON.stringify(d);
-      if(s!==_sonucStr){ _sonucStr=s; SONUC=d; ciz(); }
+      if(d&&d.tarih===hedef){ _sonucUygula(d); return; }
+      if(!iso) return;                                                     // canlı json başka güne aitse arşive düş
+      fetch("sonuclar-arsiv/"+iso+".json",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(a=>{
+        if(a&&a.tarih===hedef) _sonucUygula(a);
+      }).catch(()=>{});
     }).catch(()=>{});
   }catch(e){}
 }
