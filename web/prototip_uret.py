@@ -264,6 +264,11 @@ HTML = r"""<!DOCTYPE html>
   .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
   /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at (numara geçen HER YERDE) */
   .chip.bitti:not(.on){background:#eaf6ee;border-color:#bfe3cc;color:#1a7f4b}
+  .chip .gnyc{font-size:10px;font-weight:800;opacity:.9}
+  .gnyk{font-size:9.5px;font-weight:800;color:#a8720a;white-space:nowrap}
+  .yenior td{color:#98a1b0;font-style:italic}
+  .yenior td.no{font-weight:800;font-style:normal}
+  .yenior td.deg.yeni{font-size:10.5px}
   .detay td.kazanan{color:#1a7f4b !important;font-weight:800}
   .kzn{color:#1a7f4b !important;font-weight:800 !important;white-space:nowrap}
   td.no.kzn{width:auto !important;background:#eaf6ee}
@@ -370,7 +375,11 @@ function ciz(){
     b.className="chip num"+(no===secKosu?" on":""); b.textContent=no;
     // BİTEN KOŞU: koşu çipine ✓ (sonuclar.json'dan, tarih eşleşiyorsa)
     const _sn=(typeof sonucGecerli==="function"&&sonucGecerli())?(((SONUC.iller||{})[secIl]||{})[String(no)]):null;
-    if(_sn&&_sn.kazanan!=null){ b.classList.add("bitti"); b.textContent=no+" ✓"; }
+    if(_sn&&_sn.kazanan!=null){
+      b.classList.add("bitti");
+      const _g=_sn.ganyan?String(_sn.ganyan).trim():"";
+      b.innerHTML=esc(no)+" ✓"+(_g?' <span class="gnyc">'+esc(_g)+"</span>":"");
+    }
     b.onclick=()=>{secKosu=no; derF={sehir:"",msf:"",ay:""}; ciz();};
     koBox.appendChild(b);
   }
@@ -437,16 +446,31 @@ function ciz(){
       ?(((SONUC.iller||{})[secIl]||{})[String(secKosu)]):null;
     if(!_sn||_sn.kazanan==null) return;
     const kz=String(_sn.kazanan);
+    const gny=_sn.ganyan?String(_sn.ganyan).trim():"";
     document.querySelectorAll("#icerik .g-satir .atno, #icerik .tablolar.hepsi td.no, #yan .ex-satir .kno")
       .forEach(e=>{
         if(e.textContent.replace("✓","").trim()===kz){
           e.classList.add("kzn");
           if(!e.textContent.includes("✓")) e.textContent=e.textContent.trim()+" ✓";
+          if(gny&&!e.querySelector(".gnyk")) e.insertAdjacentHTML("beforeend",' <span class="gnyk">🏆'+esc(gny)+"</span>");
         }
       });
   })();
   // VARSAYILAN: detay tablosu Derece'ye göre KÜÇÜKTEN BÜYÜĞE açılır
   ic.querySelectorAll(".detay table").forEach(t=>{ if(t.dataset.drc) siralaUygula(t, t.dataset.drc); });
+  // KAZANAN adı: SIRALAMADAN SONRA, kazananın EN ÜST satırına ✓ + ganyan (🏆)
+  (()=>{
+    const _sn=(typeof sonucGecerli==="function"&&sonucGecerli())
+      ?(((SONUC.iller||{})[secIl]||{})[String(secKosu)]):null;
+    if(!_sn||_sn.kazanan==null) return;
+    const gny=_sn.ganyan?String(_sn.ganyan).trim():"";
+    ic.querySelectorAll("#icerik .detay table").forEach(t=>{
+      const ilk=t.querySelector("td.atadi.kazanan");
+      if(ilk && !ilk.textContent.includes("✓")){
+        ilk.textContent="✓ "+ilk.textContent.trim()+(gny?"  🏆"+gny:"");
+      }
+    });
+  })();
 }
 
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
@@ -493,6 +517,15 @@ function tabloHTML(t, zemin){
       <td class="deg"><div class="bar" style="width:${w}%"></div><span>${esc(r[1])}</span></td>
       <td class="say">${esc(r[2])}</td></tr>`;
   }).join("");
+  // PANELDE OLMAYAN ATLAR: babası (ya da dedesi) için kütüphanede veri yoksa
+  // at kaybolmasın — en altta soluk "yeni orijin" satırıyla görünsün.
+  const _blokTum=blokBul("Sayfa1",secIl,secKosu);
+  const _tumNo=[...new Set(((_blokTum&&_blokTum.detay)||[]).map(r=>String(r[0]??"").trim()).filter(x=>/^\d+$/.test(x)))];
+  const _varNo=new Set(trows.map(r=>String(r[0]??"").trim()));
+  const yeniRows=_tumNo.filter(n=>!_varNo.has(n)).sort((a,b)=>a-b).map(n=>
+    `<tr class="yenior"><td class="no">${esc(n)}</td>
+      ${babaGoster?`<td class="babaad">${esc(babaKisa(babaMap[n]||""))}</td>`:""}
+      <td class="deg yeni" colspan="2">yeni orijin</td></tr>`).join("");
   const ORJ_AD={"Kalite":"Babanın Yavruları: Elit Kazanma","Mesafe":"Babanın Yavruları: "+mesafeAd,
                 "Sprinter":"Babanın Yavruları: Sprintle Kazanma","Kaçak":"Babanın Yavruları: Kaçarak Kazanma",
                 "Dede Kalite":"Dedenin Yavruları: Elit Kazanma","Dede Mesafe":"Dedenin Yavruları: "+mesafeAd};
@@ -501,7 +534,7 @@ function tabloHTML(t, zemin){
                  "Sprinter":"Sprintle / Toplam Kazanma","Kaçak":"Kaçarak / Toplam Kazanma",
                  "Dede Kalite":"Elit Kazanma / Toplam Kazanma","Dede Mesafe":"Bu Mesafede / Toplam Kazanma"};
   return `<div class="tablo t-${t.name.replace(/\s+/g,"-")}"><h4><span class="nk"></span>${ORJ_AD[t.name]||t.name}</h4>
-    <table><tr><th>At No</th>${babaGoster?"<th>Baba</th>":""}<th>Değer</th><th>${SAYI_AD[t.name]||"Sayı"}</th></tr>${rows}</table></div>`;
+    <table><tr><th>At No</th>${babaGoster?"<th>Baba</th>":""}<th>Değer</th><th>${SAYI_AD[t.name]||"Sayı"}</th></tr>${rows}${yeniRows}</table></div>`;
 }
 
 // MOBİLDE GİZLENEN ikincil kolonlar (telefonda sade görünüm; 'tüm kolonlar' ile açılır)
@@ -654,7 +687,7 @@ function detayHTML(b, tab){
     let v=String(r[c]??"").trim();
     let cls="";
     const _kzn=(kazananNo&&String(r[0]??"").trim()===kazananNo);   // bu at koşuyu KAZANDI
-    if(c===1){ cls="atadi"+(_kzn?" kazanan":""); v=v.replace(/\d+$/,"").trim(); if(_kzn&&grupBas) v="✓ "+v; }   // TESCİL1 -> TESCİL
+    if(c===1){ cls="atadi"+(_kzn?" kazanan":""); v=v.replace(/\d+$/,"").trim(); }   // TESCİL1 -> TESCİL (✓+ganyan sıralamadan sonra basılır)
     else if(c===FK.no){ cls="num drc"+(_kzn?" kazanan":""); }            // At No: Derece gibi KOYU
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
     else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc"; }            // tarih: Derece gibi KOYU
