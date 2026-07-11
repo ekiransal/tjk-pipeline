@@ -290,7 +290,8 @@ HTML = r"""<!DOCTYPE html>
   .ex-satir .gun{margin-left:auto;font-weight:800;white-space:nowrap}
   .ex-satir.sik .gun{color:#c23a3a}
   .ex-satir.uzun .gun{color:#2f6fb3}
-  .ex-satir.gec .gun,.ex-satir.dsiz .gun{color:#c77f00;font-size:11px}
+  .ex-satir.gec .gun,.ex-satir.dsiz .gun{color:#c77f00;font-size:11px;
+    white-space:normal;text-align:right;max-width:62%;line-height:1.45}
   .ex-satir.dsiz .gun{color:#8a5ac2}
   @media(max-width:900px){.satir{flex-direction:column-reverse}#yan{width:100%}}
   /* AGF */
