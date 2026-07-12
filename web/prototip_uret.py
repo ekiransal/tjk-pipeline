@@ -72,7 +72,9 @@ HTML = r"""<!DOCTYPE html>
   .fayrac{height:1px;background:var(--line);margin:6px 0}
   .ftumu-l b{color:var(--pri)}
   /* DOMİNANS GRUPLARI: 50 / 66 / 75 ayrı tonlar + grup başı kalın çizgi */
-  .detay th.g50,.detay th.g66,.detay th.g75{width:46px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
+  .detay th.g50,.detay th.g66,.detay th.g75{width:46px;font-size:9.5px;letter-spacing:0;padding:4px 1px;
+    background:#dfeae5;border-top:2px solid var(--pri)}   /* P50-P66-P75 GRUP HİSSİ: ortak ton + üst bant */
+  .detay td.dom,.detay tr:nth-child(even) td.dom{background:#f2f7f5}   /* grubun sütun zemini (zebra üstünde de aynı) */
   .detay th.dar{width:40px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
 
   
@@ -283,13 +285,18 @@ HTML = r"""<!DOCTYPE html>
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:0 1 auto;min-width:0}   /* Dikkat paneli seçicilerin hemen yanına gelir */
+  /* VİDEO KARTI (v104 modern): video üstte tam genişlik, başlık altında şerit */
   .tanitimkutu{flex:0 0 320px;background:var(--card);border:none;
-    border-radius:14px;padding:8px 8px 6px;box-shadow:var(--sh)}
-  .tanitimkutu .tbaslik{font-size:14.5px;font-weight:900;color:var(--pri);letter-spacing:.5px;margin:1px 2px 7px}
-  .tanitimkutu video{width:100%;border-radius:10px;display:block;background:#000}
+    border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--sh)}
+  .tanitimkutu video{width:100%;display:block;background:#000;border-radius:0}
+  .tanitimkutu .tbaslik{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;
+    color:var(--pri);letter-spacing:.4px;margin:0;padding:10px 13px 11px}
+  .tanitimkutu .tbaslik .tsure{margin-left:auto;font-weight:800;font-size:11px;color:var(--mut);
+    background:var(--pri2);border-radius:12px;padding:2px 9px;letter-spacing:.3px}
   @media(max-width:980px){.tanitimkutu{flex:1 1 100%}}
   #yan{width:300px;flex-shrink:0}
-  #yan .kart.extrem{border:1.5px solid #eec387;border-left:5px solid #e8a13d;background:#fffdf8}   /* dikkat çeker ama bağırmaz */
+  #yan .kart.extrem{border:none;border-left:4px solid #e8a13d;background:#fff7ec;
+    box-shadow:var(--sh)}   /* dikkat çeker ama bağırmaz — modern: çerçevesiz, yumuşak zemin */
   #yan .kart{margin-bottom:0}
   .extrem h3{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .extrem .grup{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
@@ -309,7 +316,9 @@ HTML = r"""<!DOCTYPE html>
   /* AGF */
   .agf{padding:40px;text-align:center;color:var(--mut)}
   .agf .big{font-size:38px;margin-bottom:8px}
-  footer{color:var(--mut);font-size:11.5px;text-align:center;padding:18px 0 8px}
+  footer{color:var(--mut);font-size:12px;text-align:center;padding:22px 0 14px;
+         border-top:1px solid var(--line);margin-top:30px;line-height:1.6}
+  footer .fmark{font-weight:900;letter-spacing:2.5px;color:var(--pri);font-size:12.5px;margin-bottom:5px}
   @media(max-width:640px){
     .wrap{padding:10px}.chip{padding:7px 14px}.tab{padding:8px 14px}
     .paneller,.tablolar{grid-template-columns:1fr 1fr}
@@ -335,14 +344,14 @@ HTML = r"""<!DOCTYPE html>
     </div>
     <div id="yan"></div>
     <div class="tanitimkutu" id="tanitimkutu">
-      <div class="tbaslik">🎬 SİTEMİZ NASIL OKUNUR? · 90 sn</div>
       <video src="tanitim.mp4" controls playsinline preload="metadata"
         onerror="document.getElementById('tanitimkutu').style.display='none'"></video>
+      <div class="tbaslik">▶ SİTEMİZ NASIL OKUNUR?<span class="tsure">90 sn</span></div>
     </div>
   </div>
 
   <div id="icerik"></div>
-  <footer>Bu sayfadaki tüm değerlendirmeler tamamen matematiksel ve istatistiksel hesaplamalara dayanır; hissî ya da tahminî hiçbir yorum içermez. © GanyanRadar</footer>
+  <footer><div class="fmark">GANYANRADAR</div>Bu sayfadaki tüm değerlendirmeler tamamen matematiksel ve istatistiksel hesaplamalara dayanır; hissî ya da tahminî hiçbir yorum içermez.</footer>
 </div>
 
 <script>
@@ -614,7 +623,6 @@ function detayHTML(b, tab){
     if(i1>-1&&i2>-1){ dolu[i1]=22; dolu[i2]=21; }
   }
   // SON 800: kolon sırası Toplam Derece iskeletine çekilir (aynı bilgi aynı yerde)
-  //   No · At · Y.Kilo · E.Kilo · Kilo Farkı · Koşu Cinsi · Tarih · Şehir · Zemin · Pist · Mesafe · Son 800 · Fark · ...
   if(tab==="Sayfa2"){
     const isk=[0,1,8,9,10,11,2,3,4,5,7,13,14];
     dolu.sort((a,b)=>{
@@ -624,7 +632,7 @@ function detayHTML(b, tab){
   }
   // filtreli kolonlar + otomatik sıralama kolonu (Derece / Son 800)
   const FK = tab==="Sayfa1" ? {no:0,sehir:9,msf:13,tarih:8,drc:14,kf:4,zemin:10} : {no:0,sehir:3,msf:7,tarih:2,drc:15,kf:10,zemin:4};   // S8 sıralama: Net Son 800 (c15)
-  // KOLON TAŞIMA: kol'u hedef'in hemen soluna getirir
+  // KOLON TAŞIMA: kol'u hedef'in hemen soluna getirir (ESKİ DÜZEN — v105'te geri geldi)
   const tasi=(kol,hedef)=>{ const i=dolu.indexOf(kol); if(i<0) return;
     dolu.splice(i,1); const j=dolu.indexOf(hedef);
     if(j<0){ dolu.splice(i,0,kol); return; } dolu.splice(j,0,kol); };
