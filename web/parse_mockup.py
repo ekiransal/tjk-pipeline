@@ -465,4 +465,34 @@ if "derece" in wb.sheetnames:
         print(f"Dereceler: {len(out['dereceler'])} at, "
               f"{sum(len(v) for v in out['dereceler'].values())} geçmiş koşu")
 
+# ---------------------------------------------------------------------------
+# MÜKERRER SATIR TEMİZLİĞİ (HOLİGAN vakası, 12.07.2026):
+#   Aynı at + aynı tarih bir koşuda YALNIZ BİR satır olabilir (bir at günde bir
+#   koşu koşar). Scraper kaynaklı çift satırlar burada, veri katmanında düşülür.
+#   Anahtar: (at no, at adı [tescil eki soyulmuş], satırdaki İLK tarih hücresi).
+# ---------------------------------------------------------------------------
+_TARIH_RE = re.compile(r"^\d{2}\.\d{2}\.\d{4}$")
+def _mukerrer_temizle(bloklar, rol):
+    dusen = 0
+    for b in bloklar:
+        gor = set()
+        yeni = []
+        for r in b.get("detay", []):
+            if str(r[41] if len(r) > 41 else "") == "GECMIS_YOK":
+                yeni.append(r); continue
+            at = re.sub(r"\d+$", "", str(r[1] or "").strip().upper()).strip()
+            tarih = next((str(c).strip() for c in r if _TARIH_RE.match(str(c or "").strip())), "")
+            anah = (str(r[0] or "").strip(), at, tarih)
+            if at and tarih and anah in gor:
+                dusen += 1
+                continue
+            gor.add(anah)
+            yeni.append(r)
+        b["detay"] = yeni
+    if dusen:
+        print(f"Mükerrer temizliği [{rol}]: {dusen} çift satır düşüldü")
+for _rol in ("Sayfa1", "Sayfa2"):
+    if _rol in out:
+        _mukerrer_temizle(out[_rol], _rol)
+
 json.dump(out, open("mockup_parsed.json", "w", encoding="utf-8"), ensure_ascii=False)

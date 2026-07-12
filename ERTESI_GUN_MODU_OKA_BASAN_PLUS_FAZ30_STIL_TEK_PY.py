@@ -2627,9 +2627,12 @@ def faz30_stil_kimlik(row):
     cins = _n(_g("Koşu Cinsi", "Kcins"))
     pist_comb = (pist[:1] + ":" + durum) if (pist and durum) else (pist[:1] if pist else "")
     z = [tarih, sehir, mesafe, pist_comb, cins]
-    if any(x == "" or x == "NAN" for x in z):
+    at = _n(_g("At Adı", "At Adi", "At"))
+    if any(x == "" or x == "NAN" for x in z) or at in ("", "NAN"):
         return ""
-    return "|".join(z)
+    # AT ADI ANAHTARDA: %45 pozisyonu ata özgüdür; koşu-bazlı anahtar, ayni
+    # kosudan gelen IKINCI ata birincinin pozisyonunu kopyaliyordu (HOLIGAN vakasi).
+    return "|".join(z) + "|AT:" + at
 
 # Sadece İstanbul satırları işlenecek. 0 = filtre sonrası hepsi.
 SADECE_SEHIR = ""

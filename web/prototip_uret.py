@@ -12,14 +12,17 @@ HTML = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1500">
 <title>TJK Yarış Analiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f7f9; --card:#ffffff; --line:#e7e9ee; --txt:#1c2333; --mut:#6b7385;
+    --bg:#f3f5f8; --card:#ffffff; --line:#e7e9ee; --txt:#1c2333; --mut:#6b7385;
     --pri:#1e6f5c; --pri2:#e8f3f0; --acc:#c8542a; --gold:#f4b63f;
-    --r:14px; --sh:0 1px 3px rgba(20,30,50,.06),0 4px 14px rgba(20,30,50,.05);
+    --r:14px; --sh:0 3px 12px rgba(0,0,0,.06);   /* TEK TİP GÖLGE (v102) */
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
        background:var(--bg);color:var(--txt);font-size:14px;line-height:1.45}
   .wrap{max-width:none;margin:0 auto;padding:16px 24px}
   /* ÜST BAR */
@@ -36,7 +39,7 @@ HTML = r"""<!DOCTYPE html>
   .chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;
         padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;color:var(--txt)}
   .chip:hover{border-color:var(--pri)}
-  .chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+  .chip.on{background:#1f8a6b;border-color:#1f8a6b;color:#fff}   /* seçili: daha canlı yeşil */
   .chip.num{padding:8px 0;width:42px;text-align:center}
   .chip.fchip{padding:4px 12px;font-size:12px}
   /* tablo içi filtre satırı (Excel tarzı kutucuklu) + sıralanabilir başlıklar */
@@ -74,11 +77,11 @@ HTML = r"""<!DOCTYPE html>
 
   
   /* GALOP GRUP KUTULARI: kendi içinde bütün, birbirinden keskin ayrım */
-  .grup30{background:#edf6f2;border:1.5px solid #9fc4b4;border-radius:10px;padding:5px 6px}
-  .grupson{background:#fdf2ea;border:1.5px solid #e4b894;border-radius:10px;padding:5px 6px}
+  .grup30{background:#edf6f2;border:none;border-radius:12px;padding:7px 8px}
+  .grupson{background:#fdf2ea;border:none;border-radius:12px;padding:7px 8px}
   .grup30 .panel,.grupson .panel{background:#fff}
   /* ORJİN GRUP KUTUSU: 6 tablo tek bütün (baba+dede) */
-  .grupor{background:#eef2f9;border:1.5px solid #a9bcdd;border-radius:12px;padding:7px;
+  .grupor{background:#eef2f9;border:none;border-radius:12px;padding:9px;
           display:inline-block;max-width:100%}
   .gbaslik.or{color:#2f6fb3}
 
@@ -150,8 +153,8 @@ HTML = r"""<!DOCTYPE html>
        color:var(--mut);border:none;background:transparent;transition:.15s}
   .tab.on{background:var(--pri2);color:var(--pri)}
   /* KOŞU KARTI */
-  .kart{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px;margin-bottom:14px}
-  .kosu-baslik{font-size:16.5px;font-weight:800}
+  .kart{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:22px 26px;margin-bottom:24px}
+  .kosu-baslik{font-size:19px;font-weight:800}
   .kosu-baslik-satir{display:flex;align-items:baseline;justify-content:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px}   /* saat başlığın hemen yanında */
   .kosusaat{font-size:13px;font-weight:800;color:#1a7f4b;background:#eaf6ee;border:1px solid #bfe3cc;border-radius:20px;padding:4px 13px;white-space:nowrap}
   /* TARİH GEZİNTİSİ: ◀ 10.07.2026 ▶ (arşivli günler arasında) */
@@ -164,17 +167,19 @@ HTML = r"""<!DOCTYPE html>
   .tarihbar .tnav:hover{background:var(--pri2)}
   .tarihbar .tnav.pasif{color:#c9cfda;cursor:default;pointer-events:none}
   .meta{display:flex;flex-wrap:wrap;gap:8px}
-  .meta .m{background:var(--bg);border:1px solid var(--line);border-radius:9px;
-           padding:6px 12px;font-size:12.5px}
-  .meta .m b{color:var(--pri);margin-right:5px;font-weight:700}
+  .meta .m{background:var(--bg);border:1.5px solid #d7dde6;border-radius:9px;
+           padding:7px 14px;font-size:16.5px}   /* punto = koşu başlığıyla aynı */
+  .meta .m b{color:var(--pri);margin-right:6px;font-weight:900}
+  .meta .m .mv{color:var(--txt);font-weight:900}   /* değerler koyu siyah + kalın */
   .meta .m.vurgu{background:#fdf1ec;border-color:#f3d5c8}
   .meta .m.vurgu b{color:var(--acc)}
   /* BÖLÜM BAŞLIĞI */
-  .bol-baslik{display:flex;align-items:center;gap:8px;margin:18px 2px 10px;
+  .bol-baslik{display:flex;align-items:center;gap:8px;margin:28px 2px 14px;
               font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
   .bol-baslik::after{content:"";flex:1;height:1px;background:var(--line)}
   /* Detay bölüm başlıkları koşu başlığı gibi: kalın, büyük, koyu — tablo kime ait belli olsun */
-  .bol-baslik.buyuk{font-size:16.5px;font-weight:800;color:var(--txt);text-transform:none;letter-spacing:.2px}
+  .bol-baslik.buyuk{font-size:19px;font-weight:800;color:var(--txt);text-transform:none;letter-spacing:.2px;
+    border-top:1px solid var(--line);padding-top:20px}   /* bölüm ayracı: üstte ince çizgi */
   /* BAŞLIK ÇİPLERİ: galopa zıpla + AGF kısayolları */
   .bol-baslik .atlama{font-size:11px;font-weight:700;color:var(--mut);background:var(--card);
     border:1px solid var(--line);border-radius:14px;padding:3px 11px;cursor:pointer;
@@ -190,11 +195,12 @@ HTML = r"""<!DOCTYPE html>
   /* TEK HİZA: galop panelleri alta sarkmasın; sığmazsa yatay kaydırılır */
   .paneller.tekhiza{display:flex;flex-wrap:nowrap;overflow:visible;padding-bottom:2px;gap:4px;justify-content:flex-start}
   .paneller.tekhiza .panel{flex:0 1 auto;min-width:0;padding:3px 5px}   /* SIKI + sola yaslı */
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-  .panel h4{font-size:10px;font-weight:800;color:var(--pri);margin-bottom:3px;letter-spacing:.2px}
+  .panel{background:var(--card);border:none;border-radius:10px;padding:12px 14px;
+         box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .panel h4{font-size:11px;font-weight:800;color:var(--pri);margin-bottom:4px;letter-spacing:.2px}
   .panel.sonp h4{color:var(--acc)}
   .g-satir{display:flex;flex-wrap:wrap;align-items:center;gap:1px 2px;padding:1.5px 0;
-           border-bottom:1px dashed var(--line);font-size:9.5px}  /* sığmazsa tarih alt satıra iner, komşu panele TAŞMAZ */
+           border-bottom:1px dashed var(--line);font-size:10.5px}  /* sığmazsa tarih alt satıra iner, komşu panele TAŞMAZ */
   .g-satir:last-child{border-bottom:none}
   .atno{min-width:16px;height:16px;border-radius:5px;background:var(--pri2);color:var(--pri);
         font-weight:800;display:flex;align-items:center;justify-content:center;font-size:9.5px}
@@ -214,13 +220,13 @@ HTML = r"""<!DOCTYPE html>
             display:flex;align-items:center;gap:7px}
   .tablo h4 .nk{width:9px;height:9px;border-radius:3px}
   .t-Kalite .nk{background:#1e6f5c}.t-Mesafe .nk{background:#2f6fb3}
-  .t-Sprinter .nk{background:#c8542a}.t-Kaçak .nk{background:#8a56c9}
+  .t-Sprinter .nk{background:#c8542a}.t-Kaçak .nk{background:#f4b63f}   /* mor kalktı -> altın */
   .t-Dede-Kalite .nk{background:#0f4d40}.t-Dede-Mesafe .nk{background:#1d4e80}
   .tablolar.hepsi{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px}   /* SOLA YASLI, içerik kadar */
   .tablolar.hepsi .tablo{flex:0 1 auto;width:188px}
   .tablolar.hepsi .tablo h4{font-size:11px;padding:7px 9px 5px;gap:5px}
   .tablolar.hepsi .tablo h4 .nk{width:7px;height:7px}
-  .tablolar.hepsi th{font-size:8.5px;padding:3px 4px;letter-spacing:.1px}
+  .tablolar.hepsi th{font-size:8.5px;padding:3px 4px;letter-spacing:.1px;font-weight:800;color:#222}
   .tablolar.hepsi td{font-size:10px;padding:3px 4px}
   .tablolar.hepsi td.no{width:26px}
   .tablolar.hepsi td.say{font-size:9.5px}
@@ -242,10 +248,11 @@ HTML = r"""<!DOCTYPE html>
   .detay{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);
          display:inline-block;max-width:100%;vertical-align:top}  /* kutu tabloya sarılır, boş sağ kalmaz */
   .detay table{font-size:10px;white-space:normal;width:auto;margin:0}  /* genişlik: içerik kadar (DAR) */
-  .detay th{position:sticky;top:0;background:var(--bg);z-index:2;padding:3px 2px;
-            white-space:normal;line-height:1.1;border:1px solid #c9cfd9;border-bottom:2px solid #aab2bf;text-align:center;font-size:9.5px;
-            font-weight:800;color:var(--txt)}   /* başlıklar KOYU */
-  .detay td{padding:2px 2px;border:1px solid #c9cfd9;line-height:1.2;text-align:center}
+  /* TABLO KENARLIK DİYETİ (v102): dikey çizgiler kalktı, yalnız yatay ayraç kaldı */
+  .detay th{position:sticky;top:0;background:#e9edf3;z-index:2;padding:4px 4px;
+            white-space:normal;line-height:1.1;border:none;border-bottom:2px solid #aab2bf;text-align:center;font-size:9.5px;
+            font-weight:800;color:#222}   /* başlıklar KOYU */
+  .detay td{padding:4.5px 4px;border:none;border-bottom:1px solid var(--line);line-height:1.25;text-align:center}
   .detay tr:nth-child(even) td{background:#fafbfc}
   .detay tr:hover td{background:#e2efe8 !important}
   .detay td.atadi{font-weight:700;text-align:center;width:64px;white-space:normal;overflow-wrap:break-word;line-height:1.15}
@@ -265,7 +272,7 @@ HTML = r"""<!DOCTYPE html>
   /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at (numara geçen HER YERDE) */
   .chip.bitti:not(.on){background:#eaf6ee;border-color:#bfe3cc;color:#1a7f4b}
   .chip .gnyc{font-size:10px;font-weight:800;opacity:.9}
-  .gnyk{font-size:9.5px;font-weight:800;color:#a8720a;white-space:nowrap}
+  .gnyk{font-size:10.5px;font-weight:800;color:#a8720a;white-space:nowrap}
   .yenior td{color:#98a1b0;font-style:italic}
   .yenior td.no{font-weight:800;font-style:normal}
   .yenior td.deg.yeni{font-size:10.5px}
@@ -276,8 +283,8 @@ HTML = r"""<!DOCTYPE html>
   /* EXTREMLER (üstte, seçicilerin sağındaki boş alanda) */
   .ustblok{display:flex;gap:14px;align-items:flex-start}
   .ustsol{flex:0 1 auto;min-width:0}   /* Dikkat paneli seçicilerin hemen yanına gelir */
-  .tanitimkutu{flex:0 0 320px;background:var(--card);border:1px solid #e3e8ef;
-    border-radius:14px;padding:8px 8px 6px;box-shadow:0 1px 4px rgba(20,40,60,.06)}
+  .tanitimkutu{flex:0 0 320px;background:var(--card);border:none;
+    border-radius:14px;padding:8px 8px 6px;box-shadow:var(--sh)}
   .tanitimkutu .tbaslik{font-size:14.5px;font-weight:900;color:var(--pri);letter-spacing:.5px;margin:1px 2px 7px}
   .tanitimkutu video{width:100%;border-radius:10px;display:block;background:#000}
   @media(max-width:980px){.tanitimkutu{flex:1 1 100%}}
@@ -297,7 +304,7 @@ HTML = r"""<!DOCTYPE html>
   .ex-satir.uzun .gun{color:#2f6fb3}
   .ex-satir.gec .gun,.ex-satir.dsiz .gun{color:#c77f00;font-size:11px;
     white-space:normal;text-align:right;max-width:62%;line-height:1.45}
-  .ex-satir.dsiz .gun{color:#8a5ac2}
+  .ex-satir.dsiz .gun{color:#a8720a}   /* mor kalktı -> bronz */
   @media(max-width:900px){.satir{flex-direction:column-reverse}#yan{width:100%}}
   /* AGF */
   .agf{padding:40px;text-align:center;color:var(--mut)}
@@ -313,7 +320,7 @@ HTML = r"""<!DOCTYPE html>
 <body>
 <div class="wrap">
   <div class="topbar">
-    <div class="logo"><div class="ic">🏇</div>TJK Yarış Analiz</div>
+    <div class="logo"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".9"/><circle cx="12" cy="12" r="4.5" opacity=".55"/><line x1="12" y1="12" x2="18.5" y2="6.5"/><circle cx="12" cy="12" r="1.4" fill="#fff" stroke="none"/></svg></div>TJK Yarış Analiz</div>
     <div class="tarihbar" id="tarihnav"></div>
     <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
   </div>
@@ -970,8 +977,10 @@ function kartHTML(b){
   const kosuCinsi=String(b.title||"").replace(/^\d+\.\s*Koşu\s*/,"").split(",")[0].trim();
   const kosuOzet=[kosuCinsi, h["Mesafe"], h["Zemin"]].filter(Boolean).join(" ");
 
-  const meta=["Mesafe","Zemin","Irk"].filter(k=>h[k])
-    .map(k=>`<span class="m"><b>${k}</b>${esc(h[k])}</span>`).join("");
+  // "Koşu" ve "Irk" kutuları KALDIRILDI (üstteki koyu başlıkta zaten yazıyor);
+  // kalan değerler (İl/Mesafe/Zemin) koyu siyah + kalın (arkadaş önerisi, 12.07).
+  const meta=["Mesafe","Zemin"].filter(k=>h[k])
+    .map(k=>`<span class="m"><b>${k}</b><span class="mv">${esc(h[k])}</span></span>`).join("");
   const _fv=Math.abs(parseFloat(String(h["Final"]||"").replace(",",".")));
   const _notr=(!isNaN(_fv)&&_fv<10);                          // -10..+10 -> NÖTR
   // YORUM KURALI: çift laf yok — Sprinter baskın ("sonu kuvvetli");
@@ -1007,8 +1016,14 @@ function kartHTML(b){
   const _k=parseInt(h["Koşu No"],10)||1;
   // ALTILI ÜYELİĞİ: 1. altılı = koşu 1-6; 2. altılı = SON 6 ayak (N>=8)
   const _agfList=[];
-  if(_k>=1&&_k<=6) _agfList.push({no:1, ayak:_k, lbl:(_N>=8?"1. AGF":"AGF")});
-  if(_N>=8&&_k>=_N-5&&_k<=_N) _agfList.push({no:2, ayak:_k-(_N-6), lbl:"2. AGF"});
+  // ALTILI KURALI: N>=8 -> iki altili (1.: kosu 1-6, 2.: SON 6 ayak).
+  //                N<8  -> TEK altili ve SON 6 kosudur (orn. 7 kosuda 2-7; 5. kosu = 4. ayak).
+  if(_N>=8){
+    if(_k>=1&&_k<=6) _agfList.push({no:1, ayak:_k, lbl:"1. AGF"});
+    if(_k>=_N-5&&_k<=_N) _agfList.push({no:2, ayak:_k-(_N-6), lbl:"2. AGF"});
+  }else if(_N>=6){
+    if(_k>=_N-5&&_k<=_N) _agfList.push({no:1, ayak:_k-(_N-6), lbl:"AGF"});
+  }
   const agfCip=_agfList.map(a=>`<span class="atlama agfc" onclick="agfAc(${a.no===2})">${a.lbl} · ${a.ayak}. ayak</span>`).join("");
   const yorumCip=yorumSon?`<span class="atlama bilgi">Yorum: ${esc(yorumSon)}</span>`:"";
   const kuvvetCip=(h["Final"]&&_fk&&!_notr)?`<span class="atlama bilgi">Kuvvet: ${esc(_fk)}</span>`:"";
@@ -1037,8 +1052,7 @@ function kartHTML(b){
       ${h["Saat"]?`<span class="kosusaat">🕒 Koşu Saati: ${esc(h["Saat"])}</span>`:""}
     </div>
     <div class="meta">
-      <span class="m"><b>İl</b>${esc(h["İl"]||"")}</span>
-      <span class="m"><b>Koşu</b>${esc(h["Koşu No"]||"")}</span>
+      <span class="m"><b>İl</b><span class="mv">${esc(h["İl"]||"")}</span></span>
       ${meta}${yorum}${final}
     </div>
 

@@ -2201,6 +2201,10 @@ def main():
             # %45 ÖNBELLEK: bu koşunun %45'i kütüphanede varsa VİDEO AÇMA, oradan al.
             # Anahtar = "Koşu Kimliği" (derece & 800 ile aynı format).
             kimlik = temiz_str(row.get("Koşu Kimliği", ""))
+            # AT ADI ANAHTARDA (derece tarafıyla aynı format: ...|AT:AD)
+            import re as _re_at
+            _atk = _re_at.sub(r"\s+", " ", str(at_adi or "").strip().upper())
+            kimlik = (kimlik + "|AT:" + _atk) if (kimlik and _atk) else ""
             if _kut_conn is not None and kimlik:
                 _cached = KUT.stil_getir(_kut_conn, kimlik)
                 if _cached:
