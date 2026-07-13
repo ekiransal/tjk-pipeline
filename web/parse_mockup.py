@@ -435,6 +435,13 @@ try:
 except Exception:
     out["saatler"] = {}
 
+# Koşu kimlikleri (tjk_yeni_yer.py üretir) — AGF çipi TJK'da o koşunun sayfasını açar
+try:
+    out["kosu_id"] = json.load(open("kosu_id.json", encoding="utf-8"))
+    print(f"Koşu kimlikleri: {sum(len(v) for v in out['kosu_id'].values())} koşu")
+except Exception:
+    out["kosu_id"] = {}
+
 # Geç çıkış raporu (gec_cikis_rapor.py üretir) — varsa siteye göm
 try:
     out["gec_cikis"] = json.load(open("gec_cikis.json", encoding="utf-8"))

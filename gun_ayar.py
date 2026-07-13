@@ -20,7 +20,7 @@
 # =====================================================================
 
 # Hedef yarış günü (GG.AA.YYYY). Boş "" bırakırsan OFFSET kullanılır.
-HEDEF_TARIH = "12.07.2026"
+HEDEF_TARIH = "13.07.2026"
 
 # HEDEF_TARIH boşsa kullanılır:
 OFFSET = 1

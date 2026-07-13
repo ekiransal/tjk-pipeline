@@ -73,8 +73,8 @@ HTML = r"""<!DOCTYPE html>
   .ftumu-l b{color:var(--pri)}
   /* DOMİNANS GRUPLARI: 50 / 66 / 75 ayrı tonlar + grup başı kalın çizgi */
   .detay th.g50,.detay th.g66,.detay th.g75{width:46px;font-size:9.5px;letter-spacing:0;padding:4px 1px;
-    background:#dfeae5;border-top:2px solid var(--pri)}   /* P50-P66-P75 GRUP HİSSİ: ortak ton + üst bant */
-  .detay td.dom,.detay tr:nth-child(even) td.dom{background:#f2f7f5}   /* grubun sütun zemini (zebra üstünde de aynı) */
+    background:#d2e2da;border-top:2px solid var(--pri);border-left:1px solid #b7ccc1}   /* grup tonu (bir tık koyu) + ince ayırıcı */
+  .detay td.dom,.detay tr:nth-child(even) td.dom{background:#f2f7f5;border-left:1px solid #e0ebe5}   /* sütun zemini + ayırıcı */
   .detay th.dar{width:40px;font-size:9.5px;letter-spacing:0;padding:4px 1px}
 
   
@@ -964,6 +964,19 @@ function derecelerBolum(){
 }
 
 // AGF TABLOSU AÇ: ikinci=true -> 2. altılı. Gerçek link yoksa şehir program sayfasına düşer.
+function kosuAc(ikinci){
+  // TJK programında SEÇİLİ KOŞUNUN tek-koşu görünümü (koşu kimliği scraper'dan gelir).
+  // Kimlik yoksa (eski veri) eski davranışa düşer: AGF tablosu açılır.
+  const kid=String((((DATA.kosu_id||{})[secIl]||{})[String(secKosu)])||"").trim();
+  const SL=DATA.sehir_link||{};
+  const gecerli=x=>(typeof x==="string"&&/^https?:\/\//i.test(x))?x:"";
+  const prog=gecerli(SL.program&&SL.program[secIl])||gecerli(SL[secIl])||"";
+  if(kid&&prog){
+    const u=prog.replace(/\/Info\/Sehir\//i,"/Info/Page/").split("#")[0];
+    window.open(u+"#"+kid,"_blank"); return;
+  }
+  agfAc(ikinci);
+}
 function agfAc(ikinci){
   const SL=DATA.sehir_link||{};
   const gecerli=x=>(typeof x==="string"&&/^https?:\/\//i.test(x))?x:"";   // "javascript: void(0)" gibi sahte linkler ELENİR
@@ -1027,12 +1040,13 @@ function kartHTML(b){
   // ALTILI KURALI: N>=8 -> iki altili (1.: kosu 1-6, 2.: SON 6 ayak).
   //                N<8  -> TEK altili ve SON 6 kosudur (orn. 7 kosuda 2-7; 5. kosu = 4. ayak).
   if(_N>=8){
-    if(_k>=1&&_k<=6) _agfList.push({no:1, ayak:_k, lbl:"1. AGF"});
-    if(_k>=_N-5&&_k<=_N) _agfList.push({no:2, ayak:_k-(_N-6), lbl:"2. AGF"});
+    if(_k>=1&&_k<=6) _agfList.push({no:1, lbl:"1. Altılı AGF"});
+    if(_k>=_N-5&&_k<=_N) _agfList.push({no:2, lbl:"2. Altılı AGF"});
   }else if(_N>=6){
-    if(_k>=_N-5&&_k<=_N) _agfList.push({no:1, ayak:_k-(_N-6), lbl:"AGF"});
+    if(_k>=_N-5&&_k<=_N) _agfList.push({no:1, lbl:"Altılı AGF"});
   }
-  const agfCip=_agfList.map(a=>`<span class="atlama agfc" onclick="agfAc(${a.no===2})">${a.lbl} · ${a.ayak}. ayak</span>`).join("");
+  // (v109) Çip artık TOPLU AGF tablosunu değil, TJK programında BU KOŞUNUN sayfasını açar.
+  const agfCip=_agfList.map(a=>`<span class="atlama agfc" onclick="kosuAc(${a.no===2})">${a.lbl}</span>`).join("");
   const yorumCip=yorumSon?`<span class="atlama bilgi">Yorum: ${esc(yorumSon)}</span>`:"";
   const kuvvetCip=(h["Final"]&&_fk&&!_notr)?`<span class="atlama bilgi">Kuvvet: ${esc(_fk)}</span>`:"";
   const galopZip=`<span class="atlama" onclick="galopaGit()">⬇ Galoplar</span>`;

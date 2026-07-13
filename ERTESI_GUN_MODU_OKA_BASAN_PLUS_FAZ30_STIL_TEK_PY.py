@@ -157,6 +157,28 @@ def derece_temizle(value):
 
 
 
+def son_kosu_5_fallback(df, at_adi, alti_ay_once, program_tarihi):
+    """Ilk-4'u olmayan atin EN SON kosusu 5.lik ise o TEK satiri (DataFrame) dondurur.
+    6+ ise ya da son kosu 6 aydan eskiyse None. (13.07.2026 istegi)"""
+    try:
+        d = df.copy()
+        d["TarihParsed"] = pd.to_datetime(d["Tarih"], dayfirst=True, errors="coerce")
+        d = d[d["TarihParsed"].notna() & (d["TarihParsed"] < pd.Timestamp(program_tarihi.date()))]
+        if len(d) == 0:
+            return None
+        son = d.sort_values("TarihParsed").iloc[-1]
+        m = re.search(r"(\d+)", str(son.get("S", "")).strip())
+        if not m or int(m.group(1)) != 5:
+            return None
+        if son["TarihParsed"] < alti_ay_once:
+            return None
+        print(f"SON KOSU 5.: {at_adi} | {son.get('Tarih')} -> dereceye ekleniyor (ilk-4 yok ama son kosu 5.)")
+        return d.loc[[son.name]]
+    except Exception as _e:
+        print(f"SON KOSU 5. kontrol hatasi ({at_adi}): {_e}")
+        return None
+
+
 def sira_ilk4_mi(value):
     """Bitiriş sırasını sağlam yakalar.
 
@@ -2344,8 +2366,10 @@ for sehir_adi, sehir_url in sehir_linkleri.items():
             df3 = df[df["S"].apply(sira_ilk4_mi)].copy()
 
             if len(df3) == 0:
-                print(f"ILK4 YOK: {at_adi} | son 6 ay filtresinden önce ilk-4 satırı bulunmadı")
-                continue
+                df3 = son_kosu_5_fallback(df, at_adi, alti_ay_once, program_tarihi)
+                if df3 is None:
+                    print(f"ILK4 YOK: {at_adi} | son 6 ay filtresinden önce ilk-4 satırı bulunmadı")
+                    continue
 
             df3["TarihParsed"] = pd.to_datetime(
                 df3["Tarih"],
@@ -2359,8 +2383,10 @@ for sehir_adi, sehir_url in sehir_linkleri.items():
             ]
 
             if len(df3) == 0:
-                print(f"SON6AY ILK4 YOK: {at_adi}")
-                continue
+                df3 = son_kosu_5_fallback(df, at_adi, alti_ay_once, program_tarihi)
+                if df3 is None:
+                    print(f"SON6AY ILK4 YOK: {at_adi}")
+                    continue
 
             for _, row in df3.iterrows():
 

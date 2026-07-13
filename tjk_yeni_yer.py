@@ -481,6 +481,7 @@ def bugunku_programi_cek():
             print(f"      NOT: sehir_link.json yazılamadı: {_e}")
 
         saatler = {}   # {sehir: {"1":"14:30", ...}}  -> web/saatler.json
+        kosu_idler = {}   # {sehir: {"1":"223765", ...}} -> web/kosu_id.json
         for sehir, url in sehir_link.items():
             print(f"\n--- {sehir} ---")
             try:
@@ -504,6 +505,13 @@ def bugunku_programi_cek():
                     saatler.setdefault(sehir, {}).setdefault(kno, f"{sa}:{dk}")
             except Exception:
                 pass
+            # KOŞU KİMLİKLERİ: sekme bağlantıları href="#223765">1. Koşu ... kalıbından
+            try:
+                for m in re.finditer(r'href="#(\d{4,9})"[^>]*>\s*(\d{1,2})\.\s*Ko[şs]u', html):
+                    kid, kno = m.group(1), m.group(2)
+                    kosu_idler.setdefault(sehir, {}).setdefault(kno, kid)
+            except Exception:
+                pass
             satirlar, kosu_say = _html_to_sayfa1(html, 0)   # HER İL kendi içinde 1..N
             if satirlar:
                 sehir_sayfa1.append((sehir, satirlar))
@@ -518,6 +526,15 @@ def bugunku_programi_cek():
                 print(f"      web/saatler.json yazıldı ({sum(len(v) for v in saatler.values())} koşu saati)")
         except Exception as _e:
             print(f"      NOT: saatler.json yazılamadı: {_e}")
+        # WEB: koşu kimlikleri (AGF çipi -> TJK tek-koşu görünümü)
+        try:
+            import json as _json3
+            if os.path.isdir("web"):
+                _json3.dump(kosu_idler, open(os.path.join("web", "kosu_id.json"), "w",
+                                             encoding="utf-8"), ensure_ascii=False)
+                print(f"      web/kosu_id.json yazıldı ({sum(len(v) for v in kosu_idler.values())} koşu kimliği)")
+        except Exception as _e:
+            print(f"      NOT: kosu_id.json yazılamadı: {_e}")
     finally:
         try:
             driver.quit()
