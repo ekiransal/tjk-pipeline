@@ -557,11 +557,11 @@ function tabloHTML(t, zemin){
 const MGIZ = {"Sayfa1":[3,4,6,10,11,13,16,18,22,23,24,31,32], "Sayfa2":[4,5,6,9,10,12,16,17,18]};
 let mTum=false;   // true = telefonda da tüm kolonlar
 const BASLIK_TD = ["At No","At","Y.Kilo","E.Kilo","Kilo Farkı","Koşu Cinsi","?7","?8","Tarih","Şehir",
-  "Zemin","?12","Pist","Mesafe","Derece","M.Derece","?17","Yaş/Cins","?19","Kaçıncı","",
+  "Zemin","?12","Pist","Mesafe","Derece","M.Derece","?17","Yaş/Cins","?19","Kaçıncı Oldu","",
   "İlk 3 HP'si","Güncel HP","?24","Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı",
   "Koşu Cinsi","?32","","Seyir","Üçgen"];
 const BASLIK_S8 = ["At No","At","Tarih","Şehir","Zemin","Pist","?7","Mesafe","Y.Kilo","E.Kilo",
-  "Kilo Farkı","Koşu Cinsi","?13","Son 800","Fark","Net Son 800","?17","?18","Kaçıncı",
+  "Kilo Farkı","Koşu Cinsi","?13","Son 800 (ham)","Fark","Son 800","?17","?18","Kaçıncı Oldu",
   "Genel HP Avantajı","Genel Kilo Avantajı","Orta HP Avantajı","Orta Kilo Avantajı","İnce HP Avantajı","İnce Kilo Avantajı","Seyir","Üçgen","F.Üçgen"];
 
 // SİLİNECEK KOLONLAR (1-tabanlı): at-no tekrarları + H, P, Q + mükerrer koşu cinsi (AX)
@@ -641,7 +641,7 @@ function detayHTML(b, tab){
   // DERECE'den hemen sonra: P50 · P66 · P75 · Yarıştaki Seyri · Kaçıncı, sonra kalanlar
   {
     const kacinci = tab==="Sayfa1" ? 19 : 18;
-    const zincir=[...domList.filter(c=>!domKilo.has(c)), seyA, kacinci];
+    const zincir=[...domList.filter(c=>!domKilo.has(c)), kacinci, seyA];   // v110: Kaçıncı Oldu önce, Seyir sonra
     let hIdx=dolu.indexOf(FK.drc);
     for(const kol of zincir){
       const i=dolu.indexOf(kol); if(i<0) continue;
@@ -1082,12 +1082,12 @@ function kartHTML(b){
     ${galopBlok}
 
     <div class="bol-baslik buyuk">Toplam Derece — Detay · ${kosuBilgi}${basCip}</div>
-    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
+    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir. Buradaki dereceler şehir, pist, zemin durumu (kaba–sert toprak vb.) ve mesafe farklarından arındırılarak aynılaştırılmıştır — her at, nerede ve hangi şartlarda koşmuş olursa olsun eşit zeminde kıyaslanır; gördüğünüz sıralama net sıralamadır.</div>
     ${detayHTML(b, "Sayfa1")}
 
     ${(()=>{const b8=blokBul("Sayfa2", h["İl"], h["Koşu No"]);
       return b8?`<div class="bol-baslik buyuk">Son 800 — Detay · ${kosuBilgi}${agfCip}${galopZip}${yorumCip}${kuvvetCip}</div>
-    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir.</div>
+    <div class="tablonot ustte">Not: Tablo genelinde mavi yazılar avantajı, kırmızı yazılar dezavantajı gösterir. P50, P66 ve P75 HP/KG Avantajı sütunları, atın o tarihte koştuğu koşu ile şimdi koşacağı koşuyu karşılaştırır ve ata yeni koşuda avantaj mı dezavantaj mı doğduğunu gösterir. Son 800 değerleri şehir, pist, zemin durumu (kaba–sert toprak vb.) ve mesafe farklarından arındırılarak aynılaştırılmıştır — her at, nerede ve hangi şartlarda koşmuş olursa olsun eşit zeminde kıyaslanır; gördüğünüz sıralama net sıralamadır.</div>
     ${detayHTML(b8,"Sayfa2")}`:"";})()}
 
     <div class="bol-baslik buyuk" id="galopbas2">Galoplar <span class="ayninot">— yukarıdaki galopların aynısı</span></div>
