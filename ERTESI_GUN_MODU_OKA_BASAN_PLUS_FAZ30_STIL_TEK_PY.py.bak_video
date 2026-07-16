@@ -2348,19 +2348,6 @@ for sehir_adi, sehir_url in sehir_linkleri.items():
                 raise Exception("At geçmiş koşu tablosu bulunamadı")
 
             link_kayitlari = kosu_tarih_linkleri_cikar(at_sayfa_html, kullanilan_url)
-            try:   # VIDEO LINK DUMP (eski kosularin video kodlarini yaz - ANA MANTIGA DOKUNMAZ)
-                import json as _vjson, os as _vos
-                _vdp = _vos.path.join(_vos.path.dirname(_vos.path.abspath(__file__)), "kosu_link_dump.jsonl")
-                with open(_vdp, "a", encoding="utf-8") as _vf:
-                    _vf.write(_vjson.dumps({
-                        "at": at_adi, "at_id": str(at_id),
-                        "kayitlar": [{"tarih": _k.get("tarih", ""),
-                                      "text": (_k.get("text", "") or "")[:140],
-                                      "hrefler": _k.get("hrefler", [])}
-                                     for _k in (link_kayitlari or [])]
-                    }, ensure_ascii=False) + "\n")
-            except Exception:
-                pass
 
             df = tables[1]
 

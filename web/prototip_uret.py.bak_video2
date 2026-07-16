@@ -672,7 +672,7 @@ function detayHTML(b, tab){
       ${secenekler.map(([v,ad])=>`<label><input type="radio" name="f_${tur}_${tab}_${c}" class="fr" value="${v}"${v===""?" checked":""} onchange="${fn||"fUygula"}(this)"> ${ad}</label>`).join("")}
     </div>`;
   const th=dolu.map(c=>{
-    let ad=c===seyA?"O Tarihteki Seyri":(basliklar[c]??("K"+(c+1)));
+    let ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
     if(c===FK.tarih) ad="Tarih (At No)";
     if(domk.has(c)){ const g0=domGrp(c);
       ad=g0==="g50"?"P50 HP/KG Avantajı":(g0==="g66"?"P66 HP/KG Avantajı":"P75 HP/KG Avantajı"); }
@@ -685,7 +685,7 @@ function detayHTML(b, tab){
     const mg=(MGIZ[tab]||[]).includes(c+1)?" m-gizle":"";
     const siralanir=false;   // başlığa tıklayınca sıralama YOK (Derece otomatik, Kilo Farkı panelden)
     const dar=((tab==="Sayfa1"&&(c===19||c===21||c===22))||(tab==="Sayfa2"&&c===18)||c===FK.kf||c===FK.no||c===FK.msf||c===FK.zemin)?" dar":"";
-    const adH=(c===seyA)?"O Tarihteki<br>Seyri":esc(ad);   // Seyir başlığı iki satır (dar kalsın)
+    const adH=(c===seyA)?"Yarıştaki<br>Seyri":esc(ad);   // Seyir başlığı iki satır (dar kalsın)
     return `<th data-c="${c}" class="${g}${g?domBas(c):""}${mg}${siralanir?" siralanir":""}${dar}"${siralanir?' onclick="tabloSirala(this)" title="küçükten büyüğe sırala"':""}>${adH}${f}</th>`;
   }).join("");
   const DOM_YOK=new Set(["ŞARTLI 1","SARTLI 1","ŞARTLI 19","SARTLI 19"]);

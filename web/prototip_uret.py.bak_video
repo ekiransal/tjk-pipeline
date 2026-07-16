@@ -256,10 +256,6 @@ HTML = r"""<!DOCTYPE html>
             font-weight:800;color:#222}   /* başlıklar KOYU */
   .detay td{padding:4.5px 4px;border:none;border-bottom:1px solid var(--line);line-height:1.25;text-align:center}
   .detay tr:nth-child(even) td{background:#fafbfc}
-  .tlink{color:inherit;text-decoration:none;border-bottom:1px dotted #7aa08f;cursor:pointer}
-  .tlink:hover{color:#1e6f5c;border-bottom-color:#1e6f5c}
-  .tlink .tply{font-size:8px;color:#1e6f5c;margin-left:2px}
-  .tlink .tno{font-size:9px;color:#1e6f5c;font-weight:700;margin-left:2px}
   .detay tr:hover td{background:#e2efe8 !important}
   .detay td.atadi{font-weight:700;text-align:center;width:64px;white-space:normal;overflow-wrap:break-word;line-height:1.15}
   .detay td.kcins{width:56px;white-space:normal;line-height:1.15}   /* Koşu Cinsi: metin kaydırılır, sütun dar */
@@ -645,8 +641,7 @@ function detayHTML(b, tab){
   // DERECE'den hemen sonra: P50 · P66 · P75 · Yarıştaki Seyri · Kaçıncı, sonra kalanlar
   {
     const kacinci = tab==="Sayfa1" ? 19 : 18;
-    tasi(kacinci, FK.drc);   // Kaçıncı -> Tarih'in hemen sağı
-    const zincir=[...domList.filter(c=>!domKilo.has(c)), seyA];   // Derece'den sonra: P50/P66/P75 + Seyir
+    const zincir=[...domList.filter(c=>!domKilo.has(c)), kacinci, seyA];   // v110: Kaçıncı Oldu önce, Seyir sonra
     let hIdx=dolu.indexOf(FK.drc);
     for(const kol of zincir){
       const i=dolu.indexOf(kol); if(i<0) continue;
@@ -672,8 +667,7 @@ function detayHTML(b, tab){
       ${secenekler.map(([v,ad])=>`<label><input type="radio" name="f_${tur}_${tab}_${c}" class="fr" value="${v}"${v===""?" checked":""} onchange="${fn||"fUygula"}(this)"> ${ad}</label>`).join("")}
     </div>`;
   const th=dolu.map(c=>{
-    let ad=c===seyA?"O Tarihteki Seyri":(basliklar[c]??("K"+(c+1)));
-    if(c===FK.tarih) ad="Tarih (At No)";
+    let ad=c===seyA?"Yarıştaki Seyri":(basliklar[c]??("K"+(c+1)));
     if(domk.has(c)){ const g0=domGrp(c);
       ad=g0==="g50"?"P50 HP/KG Avantajı":(g0==="g66"?"P66 HP/KG Avantajı":"P75 HP/KG Avantajı"); }
     let f="";
@@ -685,7 +679,7 @@ function detayHTML(b, tab){
     const mg=(MGIZ[tab]||[]).includes(c+1)?" m-gizle":"";
     const siralanir=false;   // başlığa tıklayınca sıralama YOK (Derece otomatik, Kilo Farkı panelden)
     const dar=((tab==="Sayfa1"&&(c===19||c===21||c===22))||(tab==="Sayfa2"&&c===18)||c===FK.kf||c===FK.no||c===FK.msf||c===FK.zemin)?" dar":"";
-    const adH=(c===seyA)?"O Tarihteki<br>Seyri":esc(ad);   // Seyir başlığı iki satır (dar kalsın)
+    const adH=(c===seyA)?"Yarıştaki<br>Seyri":esc(ad);   // Seyir başlığı iki satır (dar kalsın)
     return `<th data-c="${c}" class="${g}${g?domBas(c):""}${mg}${siralanir?" siralanir":""}${dar}"${siralanir?' onclick="tabloSirala(this)" title="küçükten büyüğe sırala"':""}>${adH}${f}</th>`;
   }).join("");
   const DOM_YOK=new Set(["ŞARTLI 1","SARTLI 1","ŞARTLI 19","SARTLI 19"]);
@@ -707,24 +701,18 @@ function detayHTML(b, tab){
     return `<tr${grupBas?' class="grupbas"':''}>`+dolu.map(c=>{
     let v=String(r[c]??"").trim();
     let cls="";
-    let _vhtml=null;
     const _kzn=(kazananNo&&String(r[0]??"").trim()===kazananNo);   // bu at koşuyu KAZANDI
     if(c===1){ cls="atadi"+(_kzn?" kazanan":""); v=v.replace(/\d+$/,"").trim(); }   // TESCİL1 -> TESCİL (✓+ganyan sıralamadan sonra basılır)
     else if(c===FK.no){ cls="num drc"+(_kzn?" kazanan":""); }            // At No: Derece gibi KOYU
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
-    else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc";
-      const _vl=String(r[42]??"").trim();
-      const _no=String(r[43]??"").trim().replace(/\.0$/,"");
-      if(/^https:\/\/[a-z0-9.-]*tjk\.org\//i.test(_vl))
-        _vhtml='<a class="tlink" href="'+esc(_vl)+'" target="_blank" rel="noopener" title="Ko\u015fuyu izle'+(_no?' \u2014 bu ko\u015fuda '+esc(_no)+' numarayd\u0131':'')+'">'+esc(fmt(v))+(_no?' <span class="tno">('+esc(_no)+')</span>':'')+'<span class="tply">\u25b6</span></a>';
-    }            // tarih: Derece gibi KOYU (video + o kosudaki at no)
+    else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc"; }            // tarih: Derece gibi KOYU
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
     else if(c===FK.kf){                     // Kilo Farkı: EKSİ=avantaj(yeşil), ARTI=dezavantaj(kırmızı)
       const fk=parseFloat(v.replace(",","."));
       cls="num "+(fk<0?"kfiyi":(fk>0?"kfkotu":""));
     }
-    else if(tab==="Sayfa1"&&c===19){ cls="orta drc"; if(/^\d+$/.test(v)) v=v+"."; }   // Kaçıncı: 2. 3. gibi
-    else if(tab==="Sayfa2"&&c===18){ cls="orta drc"; v="1."; }                        // S8 Kaçıncı: hepsi 1. (kazananın son 800'ü)
+    else if(tab==="Sayfa1"&&c===19){ cls="orta"; if(/^\d+$/.test(v)) v=v+"."; }   // Kaçıncı: 2. 3. gibi
+    else if(tab==="Sayfa2"&&c===18){ cls="orta"; v="1."; }                        // S8 Kaçıncı: hepsi 1. (kazananın son 800'ü)
     else if(basliklar[c]==="Koşu Cinsi"){ cls="kcins"; }                          // Koşu Cinsi: dar + kaydırmalı
     else if(sonhp.has(c)){
       const p=v.split("-").filter(x=>x.trim()!=="");
@@ -751,7 +739,7 @@ function detayHTML(b, tab){
     else if(/^-?\d/.test(v)) cls="num";
     const dv=(c===seyA)?String(r[seyB]??"").trim():String(r[c]??"").trim();
     const mg2=(MGIZ[tab]||[]).includes(c+1)?" m-gizle":"";
-    return `<td class="${cls}${mg2}" data-c="${c}" data-v="${esc(dv)}">${_vhtml||esc(fmt(v))}</td>`;
+    return `<td class="${cls}${mg2}" data-c="${c}" data-v="${esc(dv)}">${esc(fmt(v))}</td>`;
   }).join("")+"</tr>";}).join("");
   return `<div class="detay"><table data-drc="${FK.drc}"><tr>${th}</tr>${trs}</table></div>`;
 }

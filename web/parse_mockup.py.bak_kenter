@@ -5,7 +5,7 @@ import openpyxl, json, re, sys
 
 KAYNAK = sys.argv[1] if len(sys.argv) > 1 else "sayfa_internet.xlsx"
 TABLO_AD = {"KALİTE": "Kalite", "MESAFE": "Mesafe", "SPRİNTER": "Sprinter", "KAÇAK": "Kaçak"}
-GALOP_RE = re.compile(r"(1000\+400|800\+400|600\+400|400\s*fark|KENTER\s*\(son)", re.I)
+GALOP_RE = re.compile(r"(1000\+400|800\+400|600\+400|400\s*fark)", re.I)
 TARIH_RE = re.compile(r"^\d{2}\.\d{2}\.\d{4}$")
 
 
@@ -92,23 +92,7 @@ def parse_sheet(ws):
                                      "" if t is None else str(t).strip(),
                                      "" if sh is None else str(sh).strip()])
                         rr += 1
-                    _gad = str(nm).strip()
-                    if "KENTER" in _gad.upper():
-                        _gad = "KENTER"
-                        _nr = []
-                        for _r in rows:
-                            _pp = [x.strip() for x in str(_r[0] if _r else "").split("/")]
-                            _at = _pp[0] if _pp else ""
-                            _tar = _r[1] if len(_r) > 1 else ""
-                            if len(_pp) > 1 and TARIH_RE.match(_pp[1]) and not _tar:
-                                _tar = _pp[1]
-                            _seh = _r[2] if len(_r) > 2 else ""
-                            if _at:
-                                _nr.append([_at + " / KENTER", _tar, _seh])
-                        rows = _nr
-                        if not rows:
-                            continue
-                    blok["galops"].append({"name": _gad, "son": isSon, "col": c0, "rows": rows})
+                    blok["galops"].append({"name": str(nm).strip(), "son": isSon, "col": c0, "rows": rows})
             v1 = rowv.get(1, "")
             if re.match(r"^\d+\.\s*Koşu", v1):
                 blok["title"] = v1
