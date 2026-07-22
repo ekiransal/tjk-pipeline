@@ -1,0 +1,221 @@
+=====================================================================
+GANYANRADAR - KOMPLE CALISTIRMA VE KURTARMA REHBERI
+Guncelleme: 14.07.2026
+=====================================================================
+
+Bu dosya, sistemin TAMAMINI tek basina (ya da baska bir yardimciyla)
+calistirabilmen icin yazildi. En onemli ipucu: bu dosyayi yeni bir
+Claude sohbetine yapistirirsan, karsindaki asistan sistemin tamamini
+ogrenir ve kaldigi yerden yardim edebilir.
+
+---------------------------------------------------------------------
+1) SISTEM NEDIR? (KUS BAKISI)
+---------------------------------------------------------------------
+Iki parca var:
+
+A) MAC (evdeki Mac mini) = VERI FABRIKASI
+   Klasor: ~/Desktop/tjk
+   Gorevi: TJK'dan yarin kosacak atlarin verilerini ceker (dereceler,
+   son 800'ler, galoplar, orijin, seyirler), analiz sayfasini uretir
+   ve sunucuya yukler.
+
+B) SUNUCU (VPS) = SITENIN KENDISI
+   Adres: 185.111.235.75  (kullanici: root)
+   Site:  ganyanradar.com
+   Dosyalar: /opt/ganyanradar/  klasorunde
+   Site motoru: Flask + gunicorn + nginx (systemd servisi: ganyanradar)
+
+---------------------------------------------------------------------
+2) GUNLUK OTOMATIK DUZEN (NORMALDE HICBIR SEY YAPMANA GEREK YOK)
+---------------------------------------------------------------------
+HER AKSAM 18:00 - Mac'te zamanlayici (launchd) su scripti calistirir:
+   ~/Desktop/tjk/otomatik/otomatik_calistir.sh
+
+Script iki is yapar:
+   1. YARINI TAZELER  (gunun son galoplari, deklare degisiklikleri)
+   2. OBUR GUNU IHTIYATA CEKER (sifirdan komple cekim, gizli yedek)
+
+Bitince Mac ekraninda bildirim cikar:
+   "OK 15.07.2026 tazelendi + 16.07.2026 ihtiyata alindi"  = her sey tamam
+   Uyari isaretli bildirim = hata var, loglara bak (bkz. bolum 6)
+
+TEK SART: Mac 18:00'de ACIK ve UYANIK olmali (uyku modunda olmasin).
+
+GECE 01:00 - Sunucu kendi kendine yeni gune gecer; siteye giren herkes
+o gunun sayfasini gorur. Mac'in bununla ilgisi yok, sunucu halleder.
+
+SUNUCUDAKI OTOMATIK ISLER (crontab -l ile gorulur, dokunma):
+   */30 * * * *  sonuc_cek.py   -> her 30 dakikada kosu sonuclarini
+                                   ceker, kazananlara yesil tik atar
+   30 8 * * *    kanit_kart.py  -> sabah 08:30 kanit karti (yedek)
+   59 23 * * *   kanit_kart.py  -> gece 23:59 ayni gunun kanit karti
+
+---------------------------------------------------------------------
+3) OTOMATIK CALISMAZSA: ELLE KOMPLE CALISTIRMAK
+---------------------------------------------------------------------
+Mac'te Terminal'i ac (Spotlight'a "Terminal" yaz) ve sunu yapistir:
+
+   nohup zsh ~/Desktop/tjk/otomatik/otomatik_calistir.sh >/dev/null 2>&1 &
+
+Hepsi bu. Bu komut 18:00 otomatiginin yaptigi isin BIREBIR AYNISINI
+yapar. Script saate kendisi bakar:
+   - Saat 16:00'dan SONRA calistirirsan: YARIN'I TAZELER + OBUR GUNU
+     CEKER (normal aksam duzeni). Ornek: bugun 14 ise -> 15'i tazeler,
+     16'yi ihtiyata ceker.
+   - Saat 16:00'dan ONCE calistirirsan: BUGUN + YARIN'i ceker
+     (aksam kacirilmissa sabah telafisi icin). Ornek: 15'i sabah
+     calistirirsan -> 15'i tazeler, 16'yi ceker.
+
+Cekim 3-4 saat surebilir. Ekranda kosu sayfalari akar, DOKUNMA.
+Bitince yine bildirim cikar. Mac'i kapatma, uyutma.
+
+DIKKAT - CAKISMA: Bunu elle baslatacaksan 18:00 otomatigiyle ust uste
+binmesin. Ya 18:00'i bekleyip hic elle calistirma, ya da elle
+baslatmadan ONCE zamanlayiciyi o geceligine kapat:
+
+   launchctl unload ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist
+   nohup zsh ~/Desktop/tjk/otomatik/otomatik_calistir.sh >/dev/null 2>&1 &
+
+Is bitince (bildirimi gorunce) zamanlayiciyi geri ac:
+
+   launchctl load ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist
+
+SADECE TEK BIR GUNU cekmek istersen (ornek: 16.07.2026):
+
+   cd ~/Desktop/tjk && caffeinate -i bash GUNLUK_CALISTIR.sh 16.07.2026
+
+Sonra sayfayi uretip yayinlamak icin:
+
+   cd ~/Desktop/tjk/web && python3 parse_mockup.py ../yeni_yer_SONUC.xlsx && python3 prototip_uret.py && python3 ozellik_kaydet.py && python3 birlestir.py && scp tjk_analiz_prototip.html root@185.111.235.75:/opt/ganyanradar/analiz/tjk_analiz_prototip.html && ssh root@185.111.235.75 "python3 /opt/ganyanradar/arsivle.py" && echo YAYINDA
+
+Sonunda YAYINDA yazarsa is tamam.
+
+---------------------------------------------------------------------
+4) 18:00 ZAMANLAYICISI (LAUNCHD) BOZULURSA
+---------------------------------------------------------------------
+Calisiyor mu diye bakmak icin:
+
+   launchctl list | grep ganyan
+
+Cikti geliyorsa yuklu demektir. Gelmiyorsa yeniden yukle:
+
+   launchctl load ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist
+
+Plist dosyasi kaybolursa/bozulursa sifirdan yaz (komple yapistir):
+
+cat > ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ganyanradar.gunluk</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/emrahkiransal/Desktop/tjk/otomatik/otomatik_calistir.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>18</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
+EOF
+launchctl unload ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/com.ganyanradar.gunluk.plist && echo PLIST_TAMAM
+
+---------------------------------------------------------------------
+5) SITE COKERSE / ACILMAZSA (SUNUCU TARAFI)
+---------------------------------------------------------------------
+Ilk deneyecegin sey - siteyi yeniden baslat:
+
+   ssh root@185.111.235.75 "systemctl restart ganyanradar"
+
+Duzelmezse nginx'i de yeniden baslat:
+
+   ssh root@185.111.235.75 "systemctl restart nginx"
+
+Hata mesajlarini gormek icin:
+
+   ssh root@185.111.235.75 "journalctl -u ganyanradar -n 30 --no-pager"
+
+Sunucudaki onemli dosyalar (/opt/ganyanradar/ icinde):
+   app.py         -> sitenin kendisi (uyelik, giris, sayfalar)
+   sonuc_cek.py   -> sonuclari ceken robot (30 dk'da bir)
+   kanit_kart.py  -> kanit karti ureten script
+   arsivle.py     -> gunluk sayfayi arsive yazan script
+   uyeler.db      -> UYE VERITABANI (EN DEGERLI DOSYA - SILME!)
+   analiz/        -> yayindaki analiz sayfasi + arsiv
+   kanit/         -> kanit karti resimleri (birikir, silinmez)
+
+Uye sayisina bakmak:
+
+   ssh root@185.111.235.75 "sqlite3 /opt/ganyanradar/uyeler.db 'select count(*) from uyeler;'"
+
+---------------------------------------------------------------------
+6) HATA OLDU - NEREYE BAKACAGIM? (LOGLAR)
+---------------------------------------------------------------------
+MAC tarafi (cekim/yayin hatalari):
+   ls ~/Desktop/tjk/loglar
+   En yeni logun son 30 satiri:
+   tail -30 "$(ls -t ~/Desktop/tjk/loglar/* | head -1)"
+
+SUNUCU tarafi:
+   Sonuc cekme:  ssh root@185.111.235.75 "tail -30 /var/log/sonuc_cek.log"
+   Kanit karti:  ssh root@185.111.235.75 "tail -20 /opt/ganyanradar/kanit/kanit.log"
+   Site hatasi:  ssh root@185.111.235.75 "journalctl -u ganyanradar -n 30 --no-pager"
+
+Bu log ciktilarini yeni bir Claude sohbetine yapistirirsan hatayi
+buyuk ihtimalle cozer.
+
+---------------------------------------------------------------------
+7) YEDEKLEME (GITHUB)
+---------------------------------------------------------------------
+Tum Mac pipeline kodu GitHub'da yedekli:
+   https://github.com/ekiransal/tjk-pipeline
+
+Yedek atmak icin (haftada en az 1-2 kez yap):
+
+   cd ~/Desktop/tjk && git add -A && git commit -m "gunluk yedek" && git push
+
+Sonunda "main -> main" gorursen yedek tamam.
+"nothing to commit" derse zaten gunceldi, sorun yok.
+
+Mac tamamen olurse: yeni bilgisayara git ile bu repo indirilir,
+kod geri gelir. (Veri dosyalari repoda olmayabilir ama kod kurtulur.)
+
+---------------------------------------------------------------------
+8) BILINMESI GEREKEN OZEL DURUMLAR
+---------------------------------------------------------------------
+- SMS YOK: Sitede uye girisinde kod TELEFONA GELMEZ. Kod ekranda
+  buyuk yesil kutuda gosterilir (SMS_MODU="test" ayari, app.py
+  icinde). Netgsm hesabi acilirsa "netgsm" moduna gecilebilir.
+  Kullanici "kod gelmiyor" derse: kod ekranda, SMS beklemesin.
+
+- KANIT KARTLARI: Her gece 23:59'da o gunun kartlari otomatik olusur
+  (sabah 08:30 yedek calisir). ganyanradar.com/kanit adresinde.
+  Eski kartlar silinmez, tarihli dosya adiyla birikir.
+
+- SITE ARSIVI: Her gunun analiz sayfasi sunucuda arsivlenir. Site
+  gece 01:00'de kendiliginden yeni gune doner. Bir aksam Mac hic
+  calismasa bile ihtiyat cekimi sayesinde site bos kalmaz.
+
+- IHTIYAT MANTIGI: Her aksam obur gunun verisi de "gizli yedek"
+  olarak cekilir. Ziyaretci en fazla yarini gorur; obur gun sadece
+  arsivde bekler, ertesi aksam tazelenir.
+
+---------------------------------------------------------------------
+9) HIZLI KONTROL LISTESI (HER AKSAM 30 SANIYE)
+---------------------------------------------------------------------
+[ ] Mac acik ve fiste mi? (18:00'den once kontrol et)
+[ ] Aksam bildirimi geldi mi? ("tazelendi + ihtiyata alindi")
+[ ] Site aciliyor mu? (ganyanradar.com)
+[ ] Gece kanit karti olustu mu? (ganyanradar.com/kanit)
+
+Dordune de EVET diyorsan sistem saglikli demektir.
+=====================================================================
