@@ -7,7 +7,7 @@ Kaynak: derece cekiminin yazdigi '%45 MP4 URL' / '%45 Video URL' kolonlari
 Link bulunamayan satira DOKUNULMAZ (tarih duz yazi kalir) - hicbir sey bozulmaz.
 GUNLUK_CALISTIR.sh icinden tjk_yeni_yer.py'den SONRA calisir.
 """
-import os, re, sys, json, io
+import os, re, sys
 
 try:
     import pandas as pd
@@ -25,6 +25,7 @@ KAYNAKLAR = [
 LINK_KOLON = 43           # sheet'te 43. kolon -> DATA detay index 42 (video url)
 ATNO_KOLON = 44           # sheet'te 44. kolon -> DATA detay index 43 (o kosudaki at no)
 TARIH_RE = re.compile(r"^\d{2}\.\d{2}\.\d{4}$")
+ARSIV_JSON = os.path.join(KOK, "video_lut_arsiv.json")
 
 
 def tr_up(s):
@@ -51,89 +52,6 @@ def atno_temiz(v):
     return s if re.match(r"^\d{1,2}$", s) else ""
 
 
-
-SEHIRLER = ["İstanbul", "Ankara", "İzmir", "Bursa", "Adana", "Kocaeli",
-            "Elazığ", "Şanlıurfa", "Diyarbakır", "Antalya", "Kayseri", "Malatya"]
-VIDEO_KALIP = "https://www.tjk.org/TR/YarisSever/Info/YarisVideoAt/At?AtKodu={atk}&KosuKodu={kk}"
-DUMP = os.path.join(KOK, "kosu_link_dump.jsonl")
-
-
-def kosu_kodu_bul(hrefler):
-    for h in (hrefler or []):
-        m = re.search(r"#(\d+)\b", str(h)) or re.search(r"KosuKodu=(\d+)", str(h), re.I)
-        if m:
-            return m.group(1)
-    return ""
-
-
-def sehir_bul(text):
-    t = str(text or "")
-    for s in SEHIRLER:
-        if s in t:
-            return tr_up(s)
-    return ""
-
-
-def atkodu_haritasi():
-    """at (norm) -> AtKodu  (dogrulanmis: son-6-ay video url'lerinden)."""
-    hmap = {}
-    for yol in KAYNAKLAR:
-        if not os.path.exists(yol):
-            continue
-        try:
-            df = pd.read_excel(yol)
-        except Exception:
-            continue
-        kolonlar = {str(c): c for c in df.columns}
-        vidk = next((kolonlar[c] for c in kolonlar if "VIDEO URL" in c.upper()), None)
-        if vidk is None or "At Adı" not in kolonlar:
-            continue
-        for _, r in df.iterrows():
-            m = re.search(r"AtKodu=(\d+)", str(r.get(vidk) or ""))
-            if m:
-                a = at_norm(r.get("At Adı"))
-                if a and a not in hmap:
-                    hmap[a] = m.group(1)
-    return hmap
-
-
-def dump_lut(atkodu_map):
-    """Eski kosular: dump'tan (at,tarih,sehir) -> (kurulan video url, '')."""
-    lut = {}
-    if not os.path.exists(DUMP):
-        print("NOT: kosu_link_dump.jsonl yok (eski video adimi atlandi)")
-        return lut
-    say = 0
-    for satir in io.open(DUMP, encoding="utf-8"):
-        try:
-            d = json.loads(satir)
-        except Exception:
-            continue
-        an = at_norm(d.get("at"))
-        atk = atkodu_map.get(an)
-        if not atk:
-            _aid = str(d.get("at_id") or "").strip()
-            atk = _aid if _aid.isdigit() else ""
-        if not an or not atk:
-            continue
-        for k in d.get("kayitlar", []):
-            tarih = str(k.get("tarih") or "").strip()
-            if not TARIH_RE.match(tarih):
-                continue
-            kk = kosu_kodu_bul(k.get("hrefler"))
-            if not kk:
-                continue
-            sehir = sehir_bul(k.get("text"))
-            if not sehir:
-                continue
-            key = (an, tarih, sehir)
-            if key not in lut:
-                lut[key] = (VIDEO_KALIP.format(atk=atk, kk=kk), "")
-                say += 1
-    print("DUMP (eski kosular): %d link kuruldu" % say)
-    return lut
-
-
 def lut_kur():
     """(at, tarih, sehir) -> (video url, o kosudaki at no). MP4 oncelikli."""
     lut = {}
@@ -156,10 +74,10 @@ def lut_kur():
         say = 0
         for _, r in df.iterrows():
             url = ""
-            if mp4k is not None and tjk_url_mu(r.get(mp4k)):
+            if vidk is not None and tjk_url_mu(r.get(vidk)):
+                url = str(r.get(vidk)).strip()          # SAYFA (TJK sitesi) oncelikli - son karar
+            elif mp4k is not None and tjk_url_mu(r.get(mp4k)):
                 url = str(r.get(mp4k)).strip()
-            elif vidk is not None and tjk_url_mu(r.get(vidk)):
-                url = str(r.get(vidk)).strip()
             if not url:
                 continue
             no = atno_temiz(r.get(nok)) if nok is not None else ""
@@ -169,14 +87,6 @@ def lut_kur():
                 lut[k] = (url, no)
                 say += 1
         print("KAYNAK %s: %d link" % (os.path.basename(yol), say))
-    # ESKI KOSULAR: dump'tan kur, sadece eksik anahtarlara ekle (yakinlar oncelikli)
-    try:
-        dl = dump_lut(atkodu_haritasi())
-        for k, v in dl.items():
-            if k not in lut:
-                lut[k] = v
-    except Exception as e:
-        print("UYARI: eski video adimi atlandi (%s)" % e)
     return lut
 
 
@@ -213,6 +123,30 @@ def main():
         print("UYARI: yeni_yer_SONUC.xlsx yok - video linki adimi atlandi")
         return
     lut = lut_kur()
+    # KALICI ARSIV: onceki gunlerin linkleri kaybolmasin (%45 onbellek yamasi).
+    # Taze lut oncelikli; arsivdeki eski linkler sadece eksik anahtarlari doldurur.
+    try:
+        import json as _json
+        arsiv = {}
+        if os.path.exists(ARSIV_JSON):
+            with open(ARSIV_JSON, encoding="utf-8") as f:
+                arsiv = _json.load(f)
+        eklenen = 0
+        for kk, vv in arsiv.items():
+            p = kk.split("|")
+            if len(p) != 3 or not vv:
+                continue
+            k = (p[0], p[1], p[2])
+            if k not in lut and str(vv[0] or "").strip():
+                lut[k] = (vv[0], vv[1] if len(vv) > 1 else "")
+                eklenen += 1
+        for k, v in lut.items():
+            arsiv["|".join(k)] = [v[0], v[1]]
+        with open(ARSIV_JSON, "w", encoding="utf-8") as f:
+            _json.dump(arsiv, f, ensure_ascii=False)
+        print("ARSIV: %d eski link kullanildi | arsivde toplam %d link" % (eklenen, len(arsiv)))
+    except Exception as e:
+        print("UYARI: arsiv birlestirilemedi (%s) - taze lut ile devam" % e)
     if not lut:
         print("UYARI: hic video linki bulunamadi - adim atlandi")
         return

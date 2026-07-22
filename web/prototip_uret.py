@@ -1157,6 +1157,43 @@ sonucYukle(); setInterval(sonucYukle, 10*60*1000);
 })();
 ciz();
 </script>
+
+
+<div id="gr_radarbtn" style="display:none;position:fixed;left:16px;bottom:16px;z-index:99990;background:#c8542a;color:#fff;font-family:Inter,system-ui,sans-serif;font-weight:800;font-size:15px;padding:11px 17px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.32);cursor:pointer;user-select:none">📡 Radar <span style="opacity:.85;font-weight:600">beta</span></div>
+<div id="gr_radarpanel" style="display:none;position:fixed;left:16px;bottom:72px;z-index:99991;width:min(370px,92vw);max-height:72vh;overflow:auto;background:#fff;color:#16332b;font-family:Inter,system-ui,sans-serif;border-radius:16px;box-shadow:0 14px 46px rgba(0,0,0,.4);border:2px solid #f4b63f">
+  <div style="background:#1e6f5c;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+    <b style="font-size:16px">📡 Radar ne öğrendi</b>
+    <span id="gr_radarkapa" style="cursor:pointer;font-size:24px;line-height:1;opacity:.9">&times;</span>
+  </div>
+  <div style="padding:16px 18px;font-size:14px;line-height:1.5">
+    <div style="color:#c8542a;font-weight:800;font-size:11px;letter-spacing:.5px;margin-bottom:6px">SADECE SEN GÖRÜYORSUN · YAYINDA DEĞİL</div>
+    <div style="color:#7a6a2f;font-weight:700;font-size:11.5px;letter-spacing:.3px;margin-bottom:12px">İZLEMEDE · KANITLI GEÇMİŞ EĞİLİM — KESİN KUPON DEĞİL, VERİ BİRİKTİKÇE GÜNCELLENİR</div>
+    <ul style="margin:0;padding-left:20px">
+      <li style="margin-bottom:9px"><b>Kumda köken (orijin) önde</b> — kalabalığın görmediği değer atlarını yakalıyor.</li>
+      <li style="margin-bottom:9px"><b>Şartlı koşuda köken</b> güçlü.</li>
+      <li style="margin-bottom:9px"><b>Hızlı tempolu (çok kaçak) koşuda son-2-ay formu</b> öne çıkıyor.</li>
+      <li style="margin-bottom:9px"><b>Temiz koşuda favori</b> (batı, çim/sentetik, handikap değil) tutarlı; kötü bağlamda değil.</li>
+      <li><b>Kalabalık favorisi tek başına kaybettiriyor</b> — radarın farkı tam burada.</li>
+    </ul>
+    <div style="margin-top:14px;background:#fff4ee;border:1px solid #f0c9b8;border-radius:10px;padding:11px 13px;color:#a8431f;font-weight:700;font-size:13px">📡 Koşu bazlı sinyaller — isabet oranıyla — çok yakında (~2 hafta sonra herkese).</div>
+  </div>
+</div>
+<script>
+(function(){
+  try{
+    var h=(location.hash||"").toLowerCase();
+    if(h.indexOf("radaroff")>=0){localStorage.removeItem("gr_radar");}
+    else if(h.indexOf("radar")>=0){localStorage.setItem("gr_radar","1");}
+  }catch(e){}
+  var yetkili=false; try{yetkili=localStorage.getItem("gr_radar")==="1";}catch(e){}
+  if(!yetkili)return; /* normal ziyaretci goremez - sadece #radar acan gorur */
+  var b=document.getElementById("gr_radarbtn"),p=document.getElementById("gr_radarpanel"),k=document.getElementById("gr_radarkapa");
+  if(!b||!p)return;
+  b.style.display="block";
+  b.addEventListener("click",function(){p.style.display=(p.style.display==="none"||!p.style.display)?"block":"none";});
+  if(k)k.addEventListener("click",function(e){e.stopPropagation();p.style.display="none";});
+})();
+</script>
 </body>
 </html>
 """

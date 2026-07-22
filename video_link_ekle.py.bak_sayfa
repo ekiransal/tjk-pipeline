@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""yeni_yer_SONUC.xlsx icindeki gecmis kosu satirlarina VIDEO LINKI (kolon 43) ekler.
+
+Kaynak: derece cekiminin yazdigi '%45 MP4 URL' / '%45 Video URL' kolonlari
+(TUM_ILLER_..._STIL_EKLI.xlsx). Anahtar: (at adi, tarih, sehir).
+Link bulunamayan satira DOKUNULMAZ (tarih duz yazi kalir) - hicbir sey bozulmaz.
+GUNLUK_CALISTIR.sh icinden tjk_yeni_yer.py'den SONRA calisir.
+"""
+import os, re, sys
+
+try:
+    import pandas as pd
+    from openpyxl import load_workbook
+except Exception as e:
+    print("UYARI: pandas/openpyxl yok (%s) - video linki adimi atlandi" % e)
+    sys.exit(0)
+
+KOK = os.path.dirname(os.path.abspath(__file__))
+HEDEF = os.path.join(KOK, "yeni_yer_SONUC.xlsx")
+KAYNAKLAR = [
+    os.path.join(KOK, "TUM_ILLER_TUM_ATLAR_EKSIKSIZ_ILK4_SON6AY_ERTESI_GUN_STIL_EKLI.xlsx"),
+    os.path.join(KOK, "SON800_BUGUN_ILK_AT_STIL_FINAL_TEST_STIL_EKLI.xlsx"),
+]
+LINK_KOLON = 43           # sheet'te 43. kolon -> DATA detay index 42 (video url)
+ATNO_KOLON = 44           # sheet'te 44. kolon -> DATA detay index 43 (o kosudaki at no)
+TARIH_RE = re.compile(r"^\d{2}\.\d{2}\.\d{4}$")
+
+
+def tr_up(s):
+    return str(s or "").replace("i", "İ").replace("ı", "I").upper().strip()
+
+
+def at_norm(s):
+    t = str(s or "").strip()
+    t = re.sub(r"\d+$", "", t)             # BOARDING PASS1 -> BOARDING PASS
+    t = re.sub(r"\([^)]*\)", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return tr_up(t)
+
+
+def tjk_url_mu(u):
+    return bool(re.match(r"^https://[a-z0-9.-]*tjk\.org/", str(u or "").strip(), re.I))
+
+
+def atno_temiz(v):
+    s = str(v if v is not None else "").strip()
+    if s.lower() in ("", "nan", "none"):
+        return ""
+    s = re.sub(r"\.0+$", "", s)              # 5.0 -> 5
+    return s if re.match(r"^\d{1,2}$", s) else ""
+
+
+def lut_kur():
+    """(at, tarih, sehir) -> (video url, o kosudaki at no). MP4 oncelikli."""
+    lut = {}
+    for yol in KAYNAKLAR:
+        if not os.path.exists(yol):
+            continue
+        try:
+            df = pd.read_excel(yol)
+        except Exception as e:
+            print("UYARI: okunamadi %s (%s)" % (os.path.basename(yol), e))
+            continue
+        kolonlar = {str(c): c for c in df.columns}
+        if "At Adı" not in kolonlar or "Tarih" not in kolonlar or "Şehir" not in kolonlar:
+            continue
+        mp4k = next((kolonlar[c] for c in kolonlar if "MP4" in c.upper()), None)
+        vidk = next((kolonlar[c] for c in kolonlar if "VIDEO URL" in c.upper()), None)
+        nok = next((kolonlar[c] for c in kolonlar if "AT NO" in c.upper()), None)
+        if mp4k is None and vidk is None:
+            continue
+        say = 0
+        for _, r in df.iterrows():
+            url = ""
+            if mp4k is not None and tjk_url_mu(r.get(mp4k)):
+                url = str(r.get(mp4k)).strip()
+            elif vidk is not None and tjk_url_mu(r.get(vidk)):
+                url = str(r.get(vidk)).strip()
+            if not url:
+                continue
+            no = atno_temiz(r.get(nok)) if nok is not None else ""
+            k = (at_norm(r.get("At Adı")), str(r.get("Tarih") or "").strip(),
+                 tr_up(r.get("Şehir")))
+            if k[0] and k[1] and k not in lut:
+                lut[k] = (url, no)
+                say += 1
+        print("KAYNAK %s: %d link" % (os.path.basename(yol), say))
+    return lut
+
+
+def isle(ws, at_c, tarih_c, sehir_c, lut):
+    """Bir sayfadaki detay satirlarina linki yazar. Yazilan satir sayisini dondurur."""
+    n = 0
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
+        try:
+            at = row[at_c - 1].value
+            tarih = str(row[tarih_c - 1].value or "").strip()
+            sehir = row[sehir_c - 1].value
+        except IndexError:
+            continue
+        if not at or not TARIH_RE.match(tarih):
+            continue
+        k = (at_norm(at), tarih, tr_up(sehir))
+        kayit = lut.get(k)
+        if not kayit:
+            continue
+        url, no = kayit
+        hucre = ws.cell(row=row[0].row, column=LINK_KOLON)
+        if not hucre.value:
+            hucre.value = url
+            n += 1
+        if no:
+            h2 = ws.cell(row=row[0].row, column=ATNO_KOLON)
+            if not h2.value:
+                h2.value = no
+    return n
+
+
+def main():
+    if not os.path.exists(HEDEF):
+        print("UYARI: yeni_yer_SONUC.xlsx yok - video linki adimi atlandi")
+        return
+    lut = lut_kur()
+    if not lut:
+        print("UYARI: hic video linki bulunamadi - adim atlandi")
+        return
+    wb = load_workbook(HEDEF)
+    toplam = 0
+    # 'yapilacak yer'  : at=kolon2, tarih=kolon9, sehir=kolon10
+    # 'yapilacak yer 800': at=kolon2, tarih=kolon3, sehir=kolon4
+    for ad, atc, trc, shc in (("yapılacak yer", 2, 9, 10),
+                              ("yapılacak yer 800", 2, 3, 4)):
+        if ad in wb.sheetnames:
+            n = isle(wb[ad], atc, trc, shc, lut)
+            print("%s: %d satira video linki yazildi" % (ad, n))
+            toplam += n
+    if toplam:
+        wb.save(HEDEF)
+        print("VIDEO LINKLERI EKLENDI: %d satir" % toplam)
+    else:
+        print("NOT: eslesen satir yok (dosyalar bos olabilir)")
+
+
+if __name__ == "__main__":
+    main()
