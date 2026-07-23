@@ -62,6 +62,11 @@ caffeinate -i python3 gec_cikis_rapor.py \
   || echo "UYARI: geç çıkış taraması hata verdi (pipeline devam ediyor)"
 
 echo ""
+echo ""
+echo "============ 4.7/5  DOGU UCGENLERI (Elazig/Diyarbakir/Sanliurfa) ==="
+python3 dogu_ucgen_oku.py 15 || echo "UYARI: dogu okuyucu atladi (pipeline devam)"
+python3 dogu_ucgen_ekle.py || echo "UYARI: dogu ucgen ekleyici atladi (pipeline devam)"
+
 echo "================= 5/5  WEB SAYFASI ============================"
 if [ -d web ]; then
   (cd web && python3 parse_mockup.py ../yeni_yer_SONUC.xlsx && python3 prototip_uret.py) \
