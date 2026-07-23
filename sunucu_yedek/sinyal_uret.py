@@ -290,6 +290,22 @@ def main():
     kacak_pist = defaultdict(lambda: defaultdict(int))   # pist|tempo -> kazanan stili
     saha_pist = defaultdict(lambda: defaultdict(int))    # pist|tempo -> kosan stiller (taban)
     takip_cokus_k = P()   # YENI SINYAL: cokus+hizli -> TAKIP/GERIDEN formlusu (eski sinyalle ayni tip)
+    revans_k = P()      # AT-BASINA: bugunku rakiplerinden en cok yenmis at
+    yeniat_k = P()      # AT-BASINA: arsivde ilk kez gorulen atlar
+    tekrarci_k = P()    # AT-BASINA: son 15 gunde kosup ilk3 yapmis at
+    at_gecmis = {}      # ad_norm -> {yaris_id: sira}
+    at_songun = {}      # ad_norm -> (tarih, ilk3_mu)
+    _gorulen_at = set()
+
+    def _trh(kosu):
+        import datetime as _dt
+        t = str(kosu.get("tarih") or "")
+        for f in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y"):
+            try:
+                return _dt.datetime.strptime(t[:10], f).date()
+            except Exception:
+                pass
+        return None
     form_tempo = defaultdict(P)                             # tempo -> 'form' stratejisi
     # KACAK SAVASI -> TAKIPCI sinyali: Yorum'da KACAK gecen kosuda en formlu TAKIP-stilli at
     takip_kacakta = P()
@@ -349,6 +365,72 @@ def main():
         except Exception:
             pass
         ekle(form_tempo[tmp], sec.get("form"), kosu, abn)
+        # --- AT-BASINA SINYALLER (once SADECE gecmisle degerlendir, sonra guncelle) ---
+        try:
+            _yid = "%s|%s|%s" % (kosu.get("tarih"), kosu.get("il") or kosu.get("sehir"), kosu.get("kosu_no"))
+            _bugun_t = _trh(kosu)
+            _atl3 = kosu.get("atlar") or []
+            _adlar = {}
+            for _a3 in _atl3:
+                _nm = str(_a3.get("ad_norm") or "").strip()
+                if _nm:
+                    _adlar[_nm] = _a3
+            # 1) REVANS-LIDERI
+            _en, _en_no = 0, None
+            for _nm, _a3 in _adlar.items():
+                _gA = at_gecmis.get(_nm)
+                if not _gA:
+                    continue
+                _puan = 0
+                for _nm2 in _adlar:
+                    if _nm2 == _nm:
+                        continue
+                    _gB = at_gecmis.get(_nm2)
+                    if not _gB:
+                        continue
+                    _w = 0; _l = 0
+                    for _rid, _sA in _gA.items():
+                        _sB = _gB.get(_rid)
+                        if _sA is None or _sB is None:
+                            continue
+                        if _sA < _sB:
+                            _w += 1
+                        elif _sB < _sA:
+                            _l += 1
+                    if _w > _l:
+                        _puan += 1
+                    elif _l > _w:
+                        _puan -= 1
+                if _puan > _en:
+                    _en = _puan; _en_no = _a3.get("no")
+            if _en_no is not None and _en >= 2:
+                ekle(revans_k, _en_no, kosu, abn)
+            # 2) GRUBA-YENI-AT (arsiv isinana kadar sayma)
+            if len(_gorulen_at) >= 400:
+                for _nm, _a3 in _adlar.items():
+                    if _nm not in _gorulen_at:
+                        ekle(yeniat_k, _a3.get("no"), kosu, abn)
+            # 3) TAZE-TEKRARCI
+            if _bugun_t is not None:
+                _aday3 = []
+                for _nm, _a3 in _adlar.items():
+                    _sg = at_songun.get(_nm)
+                    if not _sg or _sg[0] is None:
+                        continue
+                    _frk = (_bugun_t - _sg[0]).days
+                    if 1 <= _frk <= 15 and _sg[1]:
+                        _aday3.append(((_a3.get("son2ay_hiz") or 0), _a3.get("no")))
+                if _aday3:
+                    ekle(tekrarci_k, max(_aday3)[1], kosu, abn)
+            # --- gecmisi guncelle (degerlendirmeden SONRA) ---
+            for _nm, _a3 in _adlar.items():
+                _s3 = _a3.get("sira")
+                _s3 = _s3 if isinstance(_s3, int) else None
+                at_gecmis.setdefault(_nm, {})[_yid] = _s3
+                at_songun[_nm] = (_bugun_t, bool(_s3 is not None and _s3 <= 3))
+                _gorulen_at.add(_nm)
+        except Exception:
+            pass
         # KACAK SAVASI -> en formlu TAKIPCI (kaçaklar eziserse arkadaki kapar)
         # YENI SINYAL: COKUS PISTI + HIZLI TEMPO -> en formlu TAKIP/GERIDEN
         try:
@@ -418,6 +500,9 @@ def main():
         "form_tempo": {t: ozet(form_tempo[t]) for t in form_tempo},
         "takip_kacakta": ozet(takip_kacakta),
         "takip_cokus": ozet(takip_cokus_k),
+        "revans": (ozet(revans_k) if revans_k.n else None),
+        "yeni_at": (ozet(yeniat_k) if yeniat_k.n else None),
+        "tekrarci": (ozet(tekrarci_k) if tekrarci_k.n else None),
         "cins_kod_say": dict(cins_kod_say),
         "kazanan_cins_mesafe": {m: dict(d) for m, d in kazanan_cins_mesafe.items()},
         "kosan_cins_mesafe": {m: dict(d) for m, d in kosan_cins_mesafe.items()},
@@ -602,6 +687,13 @@ def main():
         print("   ", satir("takip@cokus-hizli", _tc))
     else:
         print("    takip@cokus-hizli      (henuz veri toplaniyor - kova bos)")
+    print("  -- AT-BASINA SINYALLER (grup dinamikleri) --")
+    for _ad4, _kk4 in (("revans-lideri", "revans"), ("gruba-yeni-at", "yeni_at"), ("taze-tekrarci", "tekrarci")):
+        _o4 = kutup.get(_kk4) or {}
+        if _o4.get("n"):
+            print("   ", satir(_ad4, _o4))
+        else:
+            print("    %-22s (henuz veri toplaniyor)" % _ad4)
     print("  -- CINSIYET x MESAFE (disiler uzunda erkeklerin yaninda geliyor mu?) --")
     print("     ham sex kodu dagilimi (esleme dogrulama):", kutup["cins_kod_say"])
     for mb in ("sprint<=1300", "orta1400-1700", "uzun>=1800"):
