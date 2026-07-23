@@ -79,6 +79,7 @@ for ad, trc, shc, ucc in (("yapılacak yer", 9, 10, 35), ("yapılacak yer 800", 
             if sh in DOGU: dogu_once += 1
             else: bati_once += 1
     yazilan = 0
+    silinen = 0
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
         try:
             tarih = str(row[trc - 1].value or "").strip()
@@ -88,18 +89,19 @@ for ad, trc, shc, ucc in (("yapılacak yer", 9, 10, 35), ("yapılacak yer 800", 
         if sehir not in DOGU or not TARIH_RE.match(tarih):
             continue
         huc = ws.cell(row=row[0].row, column=ucc)
-        if str(huc.value or "").strip():
-            continue                     # dolu hucreye ASLA dokunma
+        eski_v = str(huc.value or "").strip()
         link = str(row[42].value or "") if len(row) >= 43 else ""
         atno = str(row[43].value or "").strip() if len(row) >= 44 else ""
         atno = re.sub(r"\.0+$", "", atno)
         kn = kosu_no(link, sehir, tarih)
-        if kn is None or not atno:
-            continue
-        u = har.get((tarih, sehir, kn, atno))
+        u = har.get((tarih, sehir, kn, atno)) if (kn is not None and atno) else None
         if u:
-            huc.value = UCGEN_STR[u]
-            yazilan += 1
+            if eski_v != UCGEN_STR[u]:
+                huc.value = UCGEN_STR[u]     # yeni okuyucunun degeri (eskiyi EZER)
+                yazilan += 1
+        elif eski_v and UC.match(eski_v):
+            huc.value = None                 # ESKI dogu ucgeni IPTAL (guvenilmez %45)
+            silinen += 1
     # bati sayaci degisti mi? (yazim sadece dogu+bos hucre - degismemeli)
     bati_sonra = 0
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
@@ -111,9 +113,9 @@ for ad, trc, shc, ucc in (("yapılacak yer", 9, 10, 35), ("yapılacak yer 800", 
             sh = tr_up(row[shc - 1].value) if len(row) >= shc else ""
             if sh not in DOGU: bati_sonra += 1
     assert bati_sonra == bati_once, "BATI UCGEN SAYISI DEGISTI - IPTAL"
-    print("  %-20s dogu ucgen: %d vardi -> %d yazildi | bati: %d (degismedi)" % (
-        ad, dogu_once, yazilan, bati_once))
-    toplam_yazilan += yazilan
+    print("  %-20s dogu: %d vardi -> %d yazildi, %d eski IPTAL | bati: %d (degismedi)" % (
+        ad, dogu_once, yazilan, silinen, bati_once))
+    toplam_yazilan += yazilan + silinen
 if toplam_yazilan == 0:
     print("  YAZILACAK UCGEN YOK - kaydetmeden cikiliyor (sayfada dogu gecmisi olmayabilir)")
     raise SystemExit(0)   # zincirde hata sayilmaz
