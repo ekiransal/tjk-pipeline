@@ -11,3 +11,5 @@ debug_*
 web/*.html
 web/*.json
 web/mockup_parsed.json
+dogu_video_cache/
+*.part
