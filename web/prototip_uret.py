@@ -11,7 +11,7 @@ HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1500">
-<title>TJK Yarış Analiz</title>
+<title>GanyanRadar Yarış Analiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -274,6 +274,7 @@ HTML = r"""<!DOCTYPE html>
   .detay td.dom{font-weight:700}
   .detay td.dom.poz{color:#2f6fb3}   /* avantaj: MAVİ */
   .detay td.dom.neg{color:#c23a3a}
+  .detay td.dom.notr{color:#9aa4b0}   /* kil payi (|kg|<=1): gri, damga yok */
   .detay td.dom.yokd{color:#b7bfcc;font-weight:400;font-size:9.5px;font-style:italic;white-space:nowrap}   /* Maiden/Şartlı 1/Şartlı 19: soluk etiket */
   /* SONUÇ İŞARETLERİ: biten koşu çipi + kazanan at (numara geçen HER YERDE) */
   .chip.bitti:not(.on){background:#eaf6ee;border-color:#bfe3cc;color:#1a7f4b}
@@ -333,7 +334,7 @@ HTML = r"""<!DOCTYPE html>
 <body>
 <div class="wrap">
   <div class="topbar">
-    <div class="logo"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".9"/><circle cx="12" cy="12" r="4.5" opacity=".55"/><line x1="12" y1="12" x2="18.5" y2="6.5"/><circle cx="12" cy="12" r="1.4" fill="#fff" stroke="none"/></svg></div>TJK Yarış Analiz</div>
+    <div class="logo"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".9"/><circle cx="12" cy="12" r="4.5" opacity=".55"/><line x1="12" y1="12" x2="18.5" y2="6.5"/><circle cx="12" cy="12" r="1.4" fill="#fff" stroke="none"/></svg></div>GanyanRadar Yarış Analiz</div>
     <div class="tarihbar" id="tarihnav"></div>
     <div class="sub">Günlük koşu analiz platformu — prototip<span id="uretimNot"></span></div>
   </div>
@@ -675,7 +676,7 @@ function detayHTML(b, tab){
     let ad=c===seyA?"O Tarihteki Seyri":(basliklar[c]??("K"+(c+1)));
     if(c===FK.tarih) ad="Tarih (At No)";
     if(domk.has(c)){ const g0=domGrp(c);
-      ad=g0==="g50"?"P50 HP/KG Avantajı":(g0==="g66"?"P66 HP/KG Avantajı":"P75 HP/KG Avantajı"); }
+      ad=g0==="g50"?"P50 Kilo Avantajı":(g0==="g66"?"P66 Kilo Avantajı":"P75 Kilo Avantajı"); }
     let f="";
     if(c===FK.no||c===FK.sehir||c===FK.msf||c===FK.zemin) f=kutuPanel(c);
     else if(c===FK.tarih&&tab==="Sayfa1") f=secimPanel(c,"trh",[["60","Son 2 Ay"],["","Tümü"]]);
@@ -742,8 +743,10 @@ function detayHTML(b, tab){
         const hp=parseFloat(v.replace(",","."));
         const kl=parseFloat(String(r[c+1]??"").replace(",","."));
         const f2=isNaN(hp)?NaN:(hp + 2*(isNaN(kl)?0:kl));
-        cls="num dom "+(f2>0?"poz":(f2<0?"neg":""));
-        if(!isNaN(f2)){ const yv=Math.round(f2*100)/100; v=(yv>0?"+":"")+yv; } else v="";
+        const fkg=f2/2;              // KILO cinsi (1 kg = 2 HP)
+        const GRIB=1.0;              // gri bant: |kg| <= 1.0 -> notr (kil payi)
+        cls="num dom "+(isNaN(fkg)?"":(fkg>GRIB?"poz":(fkg<-GRIB?"neg":"notr")));
+        if(!isNaN(fkg)){ const yv=Math.round(fkg*100)/100; v=(yv>0?"+":"")+yv; } else v="";
       }
     }
     else if(yascins.has(c)){ v=yasCinsCevir(v); cls="yc"; }

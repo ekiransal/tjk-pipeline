@@ -63,6 +63,8 @@ caffeinate -i python3 gec_cikis_rapor.py \
 
 echo ""
 echo ""
+echo "============ 4.6/5  VIDEO LINK ROBOTU (eksik gecmis linkleri) ==="
+python3 video_gecmis_doldur.py 30 || echo "UYARI: video robotu atladi (pipeline devam)"
 echo "============ 4.7/5  DOGU UCGENLERI (Elazig/Diyarbakir/Sanliurfa) ==="
 python3 dogu_ucgen_oku.py 15 || echo "UYARI: dogu okuyucu atladi (pipeline devam)"
 python3 dogu_ucgen_ekle.py || echo "UYARI: dogu ucgen ekleyici atladi (pipeline devam)"
