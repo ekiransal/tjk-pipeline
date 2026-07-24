@@ -5,7 +5,7 @@ import openpyxl, json, re, sys
 
 KAYNAK = sys.argv[1] if len(sys.argv) > 1 else "sayfa_internet.xlsx"
 TABLO_AD = {"KALİTE": "Kalite", "MESAFE": "Mesafe", "SPRİNTER": "Sprinter", "KAÇAK": "Kaçak"}
-GALOP_RE = re.compile(r"(1000\+400|800\+400|600\+400|400\s*fark|KENTER\s*\(son)", re.I)
+GALOP_RE = re.compile(r"(1400\+400|1200\+400|1000\+400|800\+400|600\+400|400\s*fark|KENTER\s*\(son)", re.I)
 TARIH_RE = re.compile(r"^\d{2}\.\d{2}\.\d{4}$")
 
 
@@ -108,7 +108,7 @@ def parse_sheet(ws):
                         rows = _nr
                         if not rows:
                             continue
-                    blok["galops"].append({"name": _gad, "son": isSon, "col": c0, "rows": rows})
+                    blok["galops"].append({"name": _gad.replace("400 farkı", "400").replace("400 Farkı", "400"), "son": isSon, "col": c0, "rows": rows})
             v1 = rowv.get(1, "")
             if re.match(r"^\d+\.\s*Koşu", v1):
                 blok["title"] = v1
