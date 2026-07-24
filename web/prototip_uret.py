@@ -294,6 +294,11 @@ HTML = r"""<!DOCTYPE html>
   .tanitimkutu{flex:0 0 320px;background:var(--card);border:none;
     border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--sh)}
   .tanitimkutu video{width:100%;display:block;background:#000;border-radius:0}
+  /* SITE ICI VIDEO PENCERESI (mp4 satirlari) */
+  #vmodal{display:none;position:fixed;inset:0;background:rgba(10,14,20,.85);z-index:999;align-items:center;justify-content:center;padding:18px}
+  #vmodal .vkutu{position:relative;width:min(920px,96vw);background:#000;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  #vmodal video{width:100%;display:block;border-radius:10px;max-height:80vh}
+  #vmodal .vkapat{position:absolute;top:-36px;right:0;color:#fff;font-size:24px;cursor:pointer;padding:4px 10px}
   .tanitimkutu .tbaslik{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;
     color:var(--pri);letter-spacing:.4px;margin:0;padding:10px 13px 11px}
   .tanitimkutu .tbaslik .tsure{margin-left:auto;font-weight:800;font-size:11px;color:var(--mut);
@@ -721,8 +726,10 @@ function detayHTML(b, tab){
       let _vl=String(r[42]??"").trim();
       if(/videoftp/i.test(_vl)&&_atKodlari[atBase]) _vl="https://www.tjk.org/TR/YarisSever/Info/YarisVideoAt/At?AtKodu="+_atKodlari[atBase];
       const _no=String(r[43]??"").trim().replace(/\.0$/,"");
-      if(/^https:\/\/[a-z0-9.-]*tjk\.org\//i.test(_vl))
-        _vhtml='<a class="tlink" href="'+esc(_vl)+'" target="_blank" rel="noopener" title="Ko\u015fuyu izle'+(_no?' \u2014 bu ko\u015fuda '+esc(_no)+' numarayd\u0131':'')+'">'+esc(fmt(v))+(_no?' <span class="tno">('+esc(_no)+')</span>':'')+'<span class="tply">\u25b6</span></a>';
+      if(/^https:\/\/[a-z0-9.-]*tjk\.org\//i.test(_vl)){
+        const _icerde=/videoftp/i.test(_vl);   // mp4: SITEDE oynat; TJK sayfasi: yeni sekme
+        _vhtml='<a class="tlink" href="'+esc(_vl)+'"'+(_icerde?' onclick="vAc(this.href);return false;"':' target="_blank" rel="noopener"')+' title="Ko\u015fuyu izle'+(_no?' \u2014 bu ko\u015fuda '+esc(_no)+' numarayd\u0131':'')+'">'+esc(fmt(v))+(_no?' <span class="tno">('+esc(_no)+')</span>':'')+'<span class="tply">\u25b6</span></a>';
+      }
     }            // tarih: Derece gibi KOYU (video + o kosudaki at no)
     else if(c===FK.drc){ cls="num drc"; }   // Derece: kalın siyah (boyasız)
     else if(c===FK.kf){                     // Kilo Farkı: EKSİ=avantaj(yeşil), ARTI=dezavantaj(kırmızı)
@@ -767,6 +774,22 @@ function detayHTML(b, tab){
 function drcSaniye(v){
   const m=String(v).match(/^(\d+):(\d+)[,.](\d+)$/);
   return m? parseInt(m[1])*6000+parseInt(m[2])*100+parseInt(m[3]) : null;
+}
+// SITE ICI VIDEO: mp4 satiri tiklaninca sayfadan cikmadan oynat
+function vAc(u){
+  let m=document.getElementById("vmodal");
+  if(!m){
+    m=document.createElement("div"); m.id="vmodal";
+    m.innerHTML='<div class="vkutu"><span class="vkapat" onclick="vKapat()">\u2715</span><video id="vvid" controls playsinline autoplay></video></div>';
+    m.onclick=function(e){ if(e.target===m) vKapat(); };
+    document.body.appendChild(m);
+  }
+  document.getElementById("vvid").src=u;
+  m.style.display="flex";
+}
+function vKapat(){
+  const m=document.getElementById("vmodal");
+  if(m){ const vv=document.getElementById("vvid"); vv.pause(); vv.removeAttribute("src"); vv.load(); m.style.display="none"; }
 }
 function tarihGoster(v){ // her tarih dd.mm.yyyy (yıl DAHİL) görünsün
   const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
