@@ -38,7 +38,7 @@ def at_norm(s):
 SEHIR_AD = {tr_up(s): s for s in SEHIRLER}   # 'KOCAELİ' -> 'Kocaeli' (CSV adi)
 
 # TJK CSV'de at adinin sonuna eklenen ekipman kisaltmalari (KG=gozluk, DB=dil bagi...)
-SON_EK = {"KG", "DB", "SK", "K", "G"}
+SON_EK = {"KG", "DB", "SK", "K", "G", "SKG"}
 
 
 def ek_temizle(s):
