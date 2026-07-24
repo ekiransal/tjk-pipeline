@@ -692,6 +692,10 @@ function detayHTML(b, tab){
   const DOM_YOK=new Set(["ŞARTLI 1","SARTLI 1","ŞARTLI 19","SARTLI 19"]);
   const KCIN = tab==="Sayfa1" ? 5 : 11;   // satırın koşu cinsi kolonu (0-tabanlı)
   let _oncekiAt="";
+  // MP4 -> SAYFA LINKI: ayni atin herhangi bir satirindaki AtKodu ile
+  const _atKodlari={};
+  rows.forEach(_rr=>{const _a=String(_rr[1]??"").trim().toUpperCase().replace(/\d+$/,"").trim();
+    const _m=String(_rr[42]??"").match(/AtKodu=(\d+)/); if(_m&&!_atKodlari[_a]) _atKodlari[_a]=_m[1];});
   const trs=rows.map(r=>{
     // KAYIP AT: geçmişi olmayan at tek satırla gösterilir (görünmez olmaz)
     if(String(r[41]||"")==="GECMIS_YOK"){
@@ -714,7 +718,8 @@ function detayHTML(b, tab){
     else if(c===FK.no){ cls="num drc"+(_kzn?" kazanan":""); }            // At No: Derece gibi KOYU
     else if(c===seyA){ v=String(r[seyB]??"").trim(); cls="ucgen"; }      // YALNIZ ÜÇGEN
     else if(c===FK.tarih){ v=tarihGoster(v); cls="num drc";
-      const _vl=String(r[42]??"").trim();
+      let _vl=String(r[42]??"").trim();
+      if(/videoftp/i.test(_vl)&&_atKodlari[atBase]) _vl="https://www.tjk.org/TR/YarisSever/Info/YarisVideoAt/At?AtKodu="+_atKodlari[atBase];
       const _no=String(r[43]??"").trim().replace(/\.0$/,"");
       if(/^https:\/\/[a-z0-9.-]*tjk\.org\//i.test(_vl))
         _vhtml='<a class="tlink" href="'+esc(_vl)+'" target="_blank" rel="noopener" title="Ko\u015fuyu izle'+(_no?' \u2014 bu ko\u015fuda '+esc(_no)+' numarayd\u0131':'')+'">'+esc(fmt(v))+(_no?' <span class="tno">('+esc(_no)+')</span>':'')+'<span class="tply">\u25b6</span></a>';
